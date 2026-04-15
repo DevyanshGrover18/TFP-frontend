@@ -15,22 +15,22 @@ const slides: Slide[] = [
     id: 1,
     image: "/banner1.jpg",
     eyebrow: "Cotton Atelier",
-    title: "Premium Cotton Fabrics",
-    subtitle: "Soft, breathable, and crafted for everyday comfort",
+    title: "Majestic mountains",
+    subtitle: "Find your peace in the heights",
   },
   {
     id: 2,
     image: "/banner2.jpg",
     eyebrow: "Seasonal Edit",
-    title: "New Season Collections",
-    subtitle: "Explore the latest prints, textures, and weaves",
+    title: "Golden coastlines",
+    subtitle: "Where the ocean meets the shore",
   },
   {
     id: 3,
     image: "/banner3.jpg",
     eyebrow: "Certified Quality",
-    title: "Certified Quality Textiles",
-    subtitle: "OEKO-TEX certified fabrics you can trust",
+    title: "Ancient forests",
+    subtitle: "Breathe in the wild unknown",
   },
 ];
 
@@ -208,7 +208,7 @@ const HomeCarousal: React.FC = () => {
               aria-hidden="true"
               style={{ color: "#c9a96e", fontSize: "14px", lineHeight: 1 }}
             >
-              →
+              &rarr;
             </span>
           </a>
         </div>
@@ -216,16 +216,15 @@ const HomeCarousal: React.FC = () => {
         <button
           onClick={() => handleManual(back)}
           aria-label="Previous"
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/50 transition-all duration-200 z-10 cursor-pointer"
+          className="absolute left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/30 backdrop-blur-sm transition-all duration-200 hover:bg-black/50"
         >
           <ChevronLeft />
         </button>
 
-        {/* Next button */}
         <button
           onClick={() => handleManual(next)}
           aria-label="Next"
-          className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/50 transition-all duration-200 z-10 cursor-pointer"
+          className="absolute right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/30 backdrop-blur-sm transition-all duration-200 hover:bg-black/50"
         >
           <ChevronRight />
         </button>
@@ -254,18 +253,18 @@ const HomeCarousal: React.FC = () => {
         `}</style>
 
         <div className="absolute bottom-6 left-1/2 z-50 flex -translate-x-1/2 gap-2">
-          {slides.map((s, i) => (
+          {slides.map((slide, index) => (
             <button
-              key={s.id}
+              key={slide.id}
               onClick={() =>
-                handleManual(() => goTo(i, i > current ? "right" : "left"))
+                handleManual(() => goTo(index, index > current ? "right" : "left"))
               }
-              aria-label={`Slide ${i + 1}`}
-              className="h-[6px] rounded-full border-none p-0 cursor-pointer transition-all duration-300"
+              aria-label={`Slide ${index + 1}`}
+              className="h-[6px] cursor-pointer rounded-full border-none p-0 transition-all duration-300"
               style={{
-                width: i === current ? "28px" : "6px",
+                width: index === current ? "28px" : "6px",
                 backgroundColor:
-                  i === current ? "#ffffff" : "rgba(156,163,175,0.5)",
+                  index === current ? "#ffffff" : "rgba(156,163,175,0.5)",
               }}
             />
           ))}

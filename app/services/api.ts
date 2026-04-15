@@ -1,5 +1,8 @@
-const BASE_URL ="http://localhost:8000";
-// const BASE_URL ="https://tfp-backend.onrender.com";
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  (process.env.NODE_ENV === "production"
+    ? "https://tfp-backend.onrender.com"
+    : "http://localhost:8000");
 const API_URL = `${BASE_URL}/api`;
 
 type FetchApiOptions = RequestInit & {
