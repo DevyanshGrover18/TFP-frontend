@@ -13,20 +13,20 @@ const slides: Slide[] = [
   {
     id: 1,
     image: "/banner1.jpg",
-    title: "Majestic mountains",
-    subtitle: "Find your peace in the heights",
+    title: "Premium Cotton Fabrics",
+    subtitle: "Soft, breathable, and crafted for everyday comfort",
   },
   {
     id: 2,
     image: "/banner2.jpg",
-    title: "Golden coastlines",
-    subtitle: "Where the ocean meets the shore",
+    title: "New Season Collections",
+    subtitle: "Explore the latest prints, textures, and weaves",
   },
   {
     id: 3,
     image: "/banner3.jpg",
-    title: "Ancient forests",
-    subtitle: "Breathe in the wild unknown",
+    title: "Certified Quality Textiles",
+    subtitle: "OEKO-TEX certified fabrics you can trust",
   },
 ];
 
