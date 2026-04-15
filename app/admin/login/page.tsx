@@ -16,23 +16,28 @@ const AdminLogin: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     if (!username || !password) {
       setError("Please fill in all fields.");
+      setLoading(false);
       return;
     }
 
-    const data = loginAdmin(username, password)
+    void loginAdmin(username, password)
       .then((res) => {
         if (res.success) {
           toast.success("Logged in sucessfully!");
-          router.push("/admin");
+          router.replace("/admin");
+          router.refresh();
         } else {
           setError(res.message || "Invalid credentials.");
         }
       })
-      .catch((err) => {
-        setError("An error occurred while logging in.");
+      .catch((err: unknown) => {
+        setError(
+          err instanceof Error ? err.message : "An error occurred while logging in.",
+        );
       })
       .finally(() => {
         setLoading(false);

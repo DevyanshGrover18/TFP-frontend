@@ -7,10 +7,6 @@ export function middleware(request: NextRequest){
     const {pathname} = request.nextUrl;
 
     const isLoginPage = pathname === "/admin/login";
-    if(!token && !isLoginPage){
-        return NextResponse.redirect(new URL('/admin/login', request.url));
-    }
-
     if(token && isLoginPage){
         return NextResponse.redirect(new URL("/admin", request.url));
     }

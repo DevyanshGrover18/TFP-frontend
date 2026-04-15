@@ -12,7 +12,7 @@ const TopNav = () => {
   const handleLogout = async () => {
     const response = await logoutAdmin()
     if(response.success){
-      router.push('admin/login')
+      router.push('/admin/login')
     }
   };
 
