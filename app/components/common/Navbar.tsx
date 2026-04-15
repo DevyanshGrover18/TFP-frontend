@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React, { useState, useRef, useEffect } from "react";
 import { Search, User, ShoppingBag, ChevronDown } from "lucide-react";
 import { getAllCategories } from "@/app/services/categoriesService";
@@ -23,23 +24,23 @@ const MegaMenu = ({
   const hasChildren = (category.children?.length ?? 0) > 0;
 
   return (
-    <div className="absolute left-0 right-0 top-full z-50 bg-white border-t border-gray-100 shadow-lg">
-      <div className="max-w-5xl mx-auto px-10 py-6">
+    <div className="absolute left-0 right-0 top-full z-50 bg-neutral border-t border-tertiary shadow-sm">
+      <div className="max-w-5xl mx-auto px-10 py-8">
         {hasChildren ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8">
             {category.children!.map((child) => (
               <div key={child._id}>
-                <p className="text-md font-semibold text-red-600 mb-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary mb-3">
                   {child.name}
                 </p>
                 {(child.children?.length ?? 0) > 0 && (
-                  <ul className="grid grid-flow-col grid-rows-3 gap-x-6 gap-y-1">
+                  <ul className="space-y-2">
                     {child.children!.map((sub) => (
                       <li key={sub._id}>
                         <a
                           href="#"
                           onClick={onClose}
-                          className="text-sm text-gray-500 hover:text-red-600 transition"
+                          className="text-sm text-primary hover:text-secondary transition-colors duration-150"
                         >
                           {sub.name}
                         </a>
@@ -51,7 +52,7 @@ const MegaMenu = ({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-400">No subcategories available.</p>
+          <p className="text-sm text-secondary">No subcategories available.</p>
         )}
       </div>
     </div>
@@ -60,11 +61,11 @@ const MegaMenu = ({
 
 const Navbar = () => {
   const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryNode[]>([]);
-  const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(
-    null,
-  );
+  const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(null);
   const navRef = useRef<HTMLElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getCategories();
@@ -74,11 +75,16 @@ const Navbar = () => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(e.target as Node)) {
         setActiveCategory(null);
+        setSearchOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus();
+  }, [searchOpen]);
 
   const getCategories = async () => {
     const response = await getAllCategories();
@@ -98,73 +104,86 @@ const Navbar = () => {
   return (
     <nav
       ref={navRef}
-      className="bg-white border-b border-gray-100 w-full relative"
+      className="w-full relative bg-neutral border-b border-tertiary"
     >
-      {/* Top row */}
-      <div className="flex items-center justify-between px-6 md:px-10 py-3 gap-4">
+      <div className="flex items-center justify-between px-8 md:px-14 py-4 gap-6">
+
         {/* Logo */}
         <div className="shrink-0">
-          <span className="text-3xl font-bold text-red-600 tracking-tight font-serif leading-none">
-            tfp
-          </span>
-          <p className="text-[9px] text-red-500 tracking-widest uppercase leading-none mt-0.5">
-            the fabric people
-          </p>
+          <Link href="/" className="text-xl font-bold tracking-tight text-primary font-serif">
+            The Fabric People
+          </Link>
         </div>
 
-        {/* Search */}
-        <div className="flex flex-1 max-w-xl items-center border border-gray-200 rounded-sm overflow-hidden">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search"
-            className="flex-1 px-3 py-2 text-sm text-gray-700 outline-none placeholder-gray-400 bg-white"
-          />
-          <button className="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition border-l border-gray-200">
-            <Search size={15} className="text-gray-500" />
+        {/* Nav links */}
+        <div className="hidden md:flex items-center gap-7">
+          {categories.map((category) => {
+            const hasChildren = (category.children?.length ?? 0) > 0;
+            const isActive = activeCategory?._id === category._id;
+
+            return (
+              <button
+                key={category._id}
+                onClick={() => handleCategoryClick(category)}
+                className={`flex items-center gap-1 text-md font-sans italic font-medium transition-colors duration-150 pb-0.5 border-b-[1.5px] ${
+                  isActive
+                    ? "text-secondary border-secondary"
+                    : "text-primary border-transparent hover:text-secondary"
+                }`}
+              >
+                {category.name}
+                {hasChildren && (
+                  <ChevronDown
+                    size={14}
+                    className={`text-tertiary transition-transform duration-200 ${isActive ? "rotate-180" : ""}`}
+                  />
+                )}
+              </button>
+            );
+          })}
+
+          <button className="text-md italic font-medium text-primary font-sans hover:text-secondary transition-colors duration-150 border-b-[1.5px] border-transparent pb-0.5">
+            Special
           </button>
         </div>
 
-        {/* Icons */}
+        {/* Right icons */}
         <div className="flex items-center gap-5">
-          <button className="text-gray-600 hover:text-gray-900 transition">
-            <User size={22} strokeWidth={1.5} />
-          </button>
-          <button className="text-gray-600 hover:text-gray-900 transition">
-            <ShoppingBag size={22} strokeWidth={1.5} />
-          </button>
-        </div>
-      </div>
 
-      {/* Bottom row — category links */}
-      <div className="flex items-center justify-center gap-8 px-6 md:px-10 pb-3">
-        {categories.map((category) => {
-          const hasChildren = (category.children?.length ?? 0) > 0;
-          const isActive = activeCategory?._id === category._id;
-
-          return (
+          {/* Expandable search */}
+          <div className="flex items-center gap-2">
+            {searchOpen && (
+              <input
+                ref={searchRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search fabrics..."
+                className="text-sm outline-none bg-transparent border-b border-secondary w-40 pb-0.5 text-primary placeholder-tertiary font-sans"
+              />
+            )}
             <button
-              key={category._id}
-              onClick={() => handleCategoryClick(category)}
-              className={`text-md font-medium uppercase cursor-pointer flex items-center gap-1 transition whitespace-nowrap ${
-                isActive ? "text-red-600" : "text-gray-700 hover:text-red-600"
-              }`}
+              onClick={() => setSearchOpen((v) => !v)}
+              className="flex items-center gap-1.5 text-xs uppercase tracking-widest text-primary hover:text-secondary transition-colors duration-150 font-sans"
             >
-              {category.name}
-              {hasChildren && (
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${
-                    isActive ? "rotate-180" : ""
-                  }`}
-                />
-              )}
+              <Search size={15} strokeWidth={1.5} />
+              {!searchOpen && <span>Search</span>}
             </button>
-          );
-        })}
-        <button
-          className={`text-md text-gray-700 hover:text-red-600 font-medium uppercase cursor-pointer flex items-center gap-1 transition whitespace-nowrap"`}
-        >Special</button>
+          </div>
+
+          <Link
+            href="/login"
+            className="flex items-center gap-1.5 text-xs uppercase tracking-widest text-primary hover:text-secondary transition-colors duration-150 font-sans"
+          >
+            <User size={15} strokeWidth={1.5} />
+            <span>Account</span>
+          </Link>
+
+          <button className="text-primary hover:text-secondary transition-colors duration-150">
+            <ShoppingBag size={18} strokeWidth={1.5} />
+          </button>
+
+        </div>
       </div>
 
       {activeCategory && (

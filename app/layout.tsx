@@ -1,6 +1,17 @@
 import type { Metadata } from "next";
+import { Manrope, Newsreader } from "next/font/google";
 import ToastProvider from "./components/common/ToastProvider";
 import "./globals.css";
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+});
+
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  variable: "--font-newsreader",
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -13,8 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">
+    <html
+      lang="en"
+      className={`${manrope.variable} ${newsreader.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
         {children}
         <ToastProvider />
       </body>

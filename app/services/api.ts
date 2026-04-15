@@ -1,21 +1,24 @@
-const BASE_URL = "http://localhost:8000";
-// const BASE_URL = "https://tfp-backend.onrender.com";
+const BASE_URL ="http://localhost:8000";
+// const BASE_URL ="https://tfp-backend.onrender.com";
 const API_URL = `${BASE_URL}/api`;
 
 type FetchApiOptions = RequestInit & {
   headers?: HeadersInit;
+  onUnauthorizedRedirectTo?: string | null;
 };
 
 export const fetchApi = async <T>(
   url: string,
   options: FetchApiOptions = {},
 ): Promise<T> => {
+  const { onUnauthorizedRedirectTo = "/admin/login", ...requestOptions } = options;
+
   const response = await fetch(`${API_URL}${url}`, {
     credentials: "include",
-    ...options,
+    ...requestOptions,
     headers: {
       "Content-Type": "application/json",
-      ...(options.headers ?? {}),
+      ...(requestOptions.headers ?? {}),
     },
   });
 
@@ -24,8 +27,8 @@ export const fetchApi = async <T>(
   };
 
   if (response.status === 401) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/admin/login";
+    if (onUnauthorizedRedirectTo && typeof window !== "undefined") {
+      window.location.href = onUnauthorizedRedirectTo;
     }
     throw new Error(data.message ?? "Unauthorized");
   }

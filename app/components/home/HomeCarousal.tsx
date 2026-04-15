@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 interface Slide {
   id: number;
   image: string;
+  eyebrow: string;
   title: string;
   subtitle: string;
 }
@@ -13,20 +14,23 @@ const slides: Slide[] = [
   {
     id: 1,
     image: "/banner1.jpg",
-    title: "Majestic mountains",
-    subtitle: "Find your peace in the heights",
+    eyebrow: "Cotton Atelier",
+    title: "Premium Cotton Fabrics",
+    subtitle: "Soft, breathable, and crafted for everyday comfort",
   },
   {
     id: 2,
     image: "/banner2.jpg",
-    title: "Golden coastlines",
-    subtitle: "Where the ocean meets the shore",
+    eyebrow: "Seasonal Edit",
+    title: "New Season Collections",
+    subtitle: "Explore the latest prints, textures, and weaves",
   },
   {
     id: 3,
     image: "/banner3.jpg",
-    title: "Ancient forests",
-    subtitle: "Breathe in the wild unknown",
+    eyebrow: "Certified Quality",
+    title: "Certified Quality Textiles",
+    subtitle: "OEKO-TEX certified fabrics you can trust",
   },
 ];
 
@@ -102,56 +106,113 @@ const HomeCarousal: React.FC = () => {
 
   return (
     <div className="w-full select-none">
-      {/* Main carousel */}
-      <div className="relative w-full h-120 overflow-hidden bg-black">
-        {/* Previous slide (exit animation) */}
+      <div
+        className="relative w-full overflow-hidden bg-black"
+        style={{ height: "92vh", maxHeight: "780px", minHeight: "500px" }}
+      >
         {prev !== null && (
-          <img
+          <div
             key={`prev-${prev}`}
-            src={slides[prev].image}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0"
             style={{
-              animation: `${direction === "right" ? "exitLeft" : "exitRight"} 0.5s ease forwards`,
+              animation: `${direction === "right" ? "exitLeft" : "exitRight"} 0.7s cubic-bezier(0.77,0,0.18,1) forwards`,
             }}
-          />
+          >
+            <img
+              src={slides[prev].image}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(to top, rgba(10,9,8,0.82) 0%, rgba(10,9,8,0.25) 50%, rgba(10,9,8,0.1) 100%)",
+              }}
+            />
+          </div>
         )}
 
-        {/* Current slide (enter animation) */}
-        <img
+        <div
           key={`curr-${current}`}
-          src={slides[current].image}
-          alt={slides[current].title}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0"
           style={{
             animation: animating
-              ? `${direction === "right" ? "enterRight" : "enterLeft"} 0.5s ease forwards`
+              ? `${direction === "right" ? "enterRight" : "enterLeft"} 0.7s cubic-bezier(0.77,0,0.18,1) forwards`
               : "none",
           }}
-        />
+        >
+          <img
+            src={slides[current].image}
+            alt={slides[current].title}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to top, rgba(10,9,8,0.85) 0%, rgba(10,9,8,0.3) 45%, rgba(10,9,8,0.08) 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(10,9,8,0.45) 0%, transparent 60%)",
+            }}
+          />
+        </div>
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-
-        {/* Caption */}
-        <div className="absolute bottom-0 left-0 right-0 px-10 pb-10">
+        <div className="absolute bottom-0 left-0 right-0 max-w-3xl px-8 pb-16 sm:px-12 lg:px-16 lg:pb-20">
+          <p
+            key={`eyebrow-${current}`}
+            className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em]"
+            style={{ animation: "fadeUp 0.5s ease 0.15s both" }}
+          >
+            {slides[current].eyebrow}
+          </p>
           <h2
             key={`title-${current}`}
-            className="text-3xl font-bold text-white mb-1 leading-tight"
-            style={{ animation: "fadeUp 0.5s ease 0.15s both" }}
+            className="mb-3 font-serif leading-tight text-white"
+            style={{
+              fontSize: "clamp(2rem, 5vw, 3.5rem)",
+              fontStyle: "italic",
+              fontWeight: 400,
+              animation: "fadeUp 0.6s ease 0.2s both",
+            }}
           >
             {slides[current].title}
           </h2>
           <p
             key={`sub-${current}`}
-            className="text-white/65 text-sm"
-            style={{ animation: "fadeUp 0.5s ease 0.25s both" }}
+            className="mb-7 max-w-xl text-sm leading-relaxed sm:text-base"
+            style={{
+              color: "rgba(245,243,238,0.72)",
+              animation: "fadeUp 0.6s ease 0.3s both",
+            }}
           >
             {slides[current].subtitle}
           </p>
+          <a
+            key={`cta-${current}`}
+            href="#"
+            className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition-all duration-200 hover:gap-3"
+            style={{
+              animation: "fadeUp 0.6s ease 0.4s both",
+              borderBottom: "1px solid rgba(201,169,110,0.6)",
+              color: "#f5f3ee",
+            }}
+          >
+            Explore Collection
+            <span
+              aria-hidden="true"
+              style={{ color: "#c9a96e", fontSize: "14px", lineHeight: 1 }}
+            >
+              →
+            </span>
+          </a>
         </div>
 
-        {/* Prev button */}
         <button
           onClick={() => handleManual(back)}
           aria-label="Previous"
@@ -192,7 +253,7 @@ const HomeCarousal: React.FC = () => {
           }
         `}</style>
 
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-50">
+        <div className="absolute bottom-6 left-1/2 z-50 flex -translate-x-1/2 gap-2">
           {slides.map((s, i) => (
             <button
               key={s.id}
@@ -210,8 +271,6 @@ const HomeCarousal: React.FC = () => {
           ))}
         </div>
       </div>
-
-      {/* Dots */}
     </div>
   );
 };
