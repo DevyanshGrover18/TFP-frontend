@@ -17,21 +17,21 @@ export const signupUser = async (
   email: string,
   password: string,
 ) =>
-  fetchApi<UserAuthResponse>("/auth/user/signup", {
+  fetchApi<UserAuthResponse>("/user/auth/signup", {
     method: "POST",
     body: JSON.stringify({ name, email, password }),
     onUnauthorizedRedirectTo: null,
   });
 
 export const loginUser = async (email: string, password: string) =>
-  fetchApi<UserAuthResponse>("/auth/user/login", {
+  fetchApi<UserAuthResponse>("/user/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
     onUnauthorizedRedirectTo: null,
   });
 
 export const logoutUser = async () =>
-  fetchApi<UserAuthResponse>("/auth/user/logout", {
+  fetchApi<UserAuthResponse>("/user/auth/logout", {
     method: "GET",
     onUnauthorizedRedirectTo: null,
   });

@@ -1,27 +1,19 @@
 "use client";
 
-import { getAllProducts } from "@/app/services/productsService";
+import {
+  getAllProducts,
+  getProductDisplayColor,
+  getProductHref,
+  getProductPrimaryImage,
+  getProductSpecification,
+  type ProductRecord,
+} from "@/app/services/productsService";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import ProductCard from "../common/ProductCard";
 
-type Product = {
-  _id: string;
-  productId: string;
-  sku: string;
-  name: string;
-  image: string;
-  categoryId: { _id: string; name: string };
-  subCategoryId: { _id: string; name: string };
-  subSubCategoryId: { _id: string; name: string };
-  composition: string;
-  color: string;
-  width: string;
-  weight: string;
-};
-
 const HomeSection3 = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -32,8 +24,7 @@ const HomeSection3 = () => {
         setLoading(true);
         setHasError(false);
         const response = await getAllProducts();
-        const data = (response.products ?? []) as Product[];
-        setProducts(data.slice(0, 6));
+        setProducts((response.products ?? []).slice(0, 6));
       } catch {
         setHasError(true);
       } finally {
@@ -41,7 +32,7 @@ const HomeSection3 = () => {
       }
     };
 
-    fetchProducts();
+    void fetchProducts();
   }, []);
 
   const hasProducts = products.length > 0;
@@ -102,16 +93,16 @@ const HomeSection3 = () => {
             <div className="space-y-4">
               <ProductCard
                 name={activeProduct.name}
-                image={activeProduct.image}
+                image={getProductPrimaryImage(activeProduct)}
+                href={getProductHref(activeProduct)}
                 category={activeProduct.categoryId?.name}
                 details={{
                   sku: activeProduct.sku,
-                  composition: activeProduct.composition,
-                  color: activeProduct.color,
-                  width: activeProduct.width,
-                  weight: activeProduct.weight,
+                  composition: getProductSpecification(activeProduct, "composition"),
+                  color: getProductDisplayColor(activeProduct),
+                  width: getProductSpecification(activeProduct, "width"),
+                  weight: getProductSpecification(activeProduct, "weight"),
                 }}
-                onClick={() => console.log("Go to product:", activeProduct._id)}
               />
 
               <div className="flex items-center justify-between">
@@ -136,7 +127,7 @@ const HomeSection3 = () => {
                     type="button"
                     onClick={showPrev}
                     aria-label="Previous product"
-                    className="flex cursor-pointer h-10 w-10 items-center justify-center rounded-full border border-stone-200 text-xl text-stone-700 transition hover:bg-stone-50"
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stone-200 text-xl text-stone-700 transition hover:bg-stone-50"
                   >
                     &#8249;
                   </button>
@@ -144,7 +135,7 @@ const HomeSection3 = () => {
                     type="button"
                     onClick={showNext}
                     aria-label="Next product"
-                    className="flex cursor-pointer h-10 w-10 items-center justify-center rounded-full border border-stone-200 text-xl text-stone-700 transition hover:bg-stone-50"
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stone-200 text-xl text-stone-700 transition hover:bg-stone-50"
                   >
                     &#8250;
                   </button>

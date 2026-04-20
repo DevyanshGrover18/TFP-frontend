@@ -1,33 +1,112 @@
 import { fetchApi } from "./api";
 
-type ProductPayload = {
+export type ProductPayload = {
   sku: string;
   name: string;
-  image: string;
+  colorCode: string;
   categoryId: string;
   subCategoryId: string;
   subSubCategoryId: string;
-  composition: string;
-  color: string;
-  width: string;
-  weight: string;
+  description: string;
+  specifications: Array<{
+    key: string;
+    value: string;
+  }>;
+  media: {
+    mainImage: string;
+    gallery: string[];
+  };
+  variants: Array<{
+    id : string,
+    sku : string,
+    name: string;
+    color: string;
+    colorCode: string;
+    mainImage: string;
+    gallery: string[];
+  }>;
 };
 
+export type ProductRecord = {
+  _id: string;
+  productId: string;
+  sku: string;
+  color: string;
+  name: string;
+  image : string;
+  colorCode: string;
+  categoryId: { _id: string; name: string };
+  subCategoryId: { _id: string; name: string };
+  subSubCategoryId: { _id: string; name: string };
+  description: string;
+  specifications: Array<{
+    key: string;
+    value: string;
+  }>;
+  media: {
+    mainImage: string;
+    gallery: string[];
+  };
+  variants: Array<{
+    id: string,
+    sku : string,
+    name: string;
+    color: string;
+    colorCode: string;
+    mainImage: string;
+    gallery: string[];
+  }>;
+};
+
+export function createProductSlug(name: string) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function getProductPrimaryImage(product: ProductRecord) {
+  return (
+    product.media?.mainImage ||
+    product.variants?.[0]?.mainImage ||
+    product.media?.gallery?.[0] ||
+    product.variants?.[0]?.gallery?.[0] ||
+    ""
+  );
+}
+
+export function getProductSpecification(product: ProductRecord, key: string) {
+  const match = product.specifications.find(
+    (item) => item.key.trim().toLowerCase() === key.trim().toLowerCase(),
+  );
+
+  return match?.value ?? "";
+}
+
+export function getProductDisplayColor(product: ProductRecord) {
+  return product.variants?.[0]?.color || product.colorCode;
+}
+
+export function getProductHref(product: ProductRecord) {
+  return `/products/${createProductSlug(product.name)}`;
+}
+
 export const getAllProducts = async () => {
-  return fetchApi<{ products?: unknown[] }>("/products", {
+  return fetchApi<{ products?: ProductRecord[] }>("/products", {
     cache: "no-store",
   });
 };
 
 export const createProduct = async (payload: ProductPayload) => {
-  return fetchApi<{ product?: unknown }>("/products", {
+  return fetchApi<{ product?: ProductRecord }>("/products", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 };
 
 export const updateProduct = async (id: string, payload: ProductPayload) => {
-  return fetchApi<{ product?: unknown }>(`/products/${id}`, {
+  return fetchApi<{ product?: ProductRecord }>(`/products/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
@@ -36,5 +115,15 @@ export const updateProduct = async (id: string, payload: ProductPayload) => {
 export const deleteProduct = async (id: string) => {
   return fetchApi<{ message?: string }>(`/products/${id}`, {
     method: "DELETE",
+  });
+};
+
+export const getProductByName = async (name: string) => {
+  return fetchApi<{
+    success: boolean;
+    message: string;
+    product?: ProductRecord;
+  }>(`/products/${name}`, {
+    method: "GET",
   });
 };

@@ -1,8 +1,10 @@
 import React from "react";
+import Link from "next/link";
 
 type ProductCardProps = {
   name: string;
   image: string;
+  href?: string;
   category?: string;
   badge?: string;
   price?: string;
@@ -21,6 +23,7 @@ type ProductCardProps = {
 const ProductCard: React.FC<ProductCardProps> = ({
   name,
   image,
+  href,
   badge,
   price,
   priceUnit = "yard",
@@ -30,18 +33,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const detailRows = [
     { label: "Composition", value: details?.composition },
-    { label: "Color",       value: details?.color },
-    { label: "Width",       value: details?.width },
-    { label: "Weight",      value: details?.weight },
-  ].filter((d) => d.value);
+    { label: "Color", value: details?.color },
+    { label: "Width", value: details?.width },
+    { label: "Weight", value: details?.weight },
+  ].filter((detail) => detail.value);
 
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group w-full cursor-pointer text-left transition-all duration-300"
-    >
-      {/* Image container */}
+  const content = (
+    <>
       <div className="relative overflow-hidden rounded-2xl">
         <img
           src={image}
@@ -49,7 +47,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
           className="aspect-[3/4] w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
 
-        {/* Badge */}
         {badge && (
           <span
             className="absolute left-3 top-3 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
@@ -59,16 +56,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </span>
         )}
 
-        {/* Hover overlay — slides up from bottom */}
         {detailRows.length > 0 && (
           <div
-            className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 translate-y-2 transition-all duration-400 ease-out group-hover:opacity-100 group-hover:translate-y-0"
+            className="absolute inset-0 flex translate-y-2 flex-col justify-end p-4 opacity-0 transition-all duration-400 ease-out group-hover:translate-y-0 group-hover:opacity-100"
             style={{
               background:
                 "linear-gradient(to top, rgba(30,25,20,0.82) 0%, rgba(30,25,20,0.45) 55%, transparent 100%)",
             }}
           >
-            {/* SKU at top of overlay */}
             {details?.sku && (
               <p
                 className="mb-3 text-[10px] uppercase tracking-widest"
@@ -78,18 +73,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
               </p>
             )}
 
-            {/* Detail rows */}
             <div className="space-y-1.5">
               {detailRows.map((row) => (
-                <div key={row.label} className="flex items-baseline justify-between gap-3">
+                <div
+                  key={row.label}
+                  className="flex items-baseline justify-between gap-3"
+                >
                   <span
-                    className="text-[11px] uppercase tracking-wider shrink-0"
+                    className="shrink-0 text-[11px] uppercase tracking-wider"
                     style={{ color: "rgba(255,255,255,0.5)" }}
                   >
                     {row.label}
                   </span>
                   <span
-                    className="text-[12px] font-medium text-right"
+                    className="text-right text-[12px] font-medium"
                     style={{
                       color: "rgba(255,255,255,0.92)",
                       fontFamily: "'Georgia', serif",
@@ -101,9 +98,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
               ))}
             </div>
 
-            {/* Divider + CTA */}
             <div
-              className="mt-3 pt-3 flex items-center justify-between"
+              className="mt-3 flex items-center justify-between pt-3"
               style={{ borderTop: "1px solid rgba(255,255,255,0.15)" }}
             >
               <span
@@ -120,7 +116,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
       </div>
 
-      {/* Info below image */}
       <div className="mt-3 space-y-0.5 px-0.5">
         {details?.sku && (
           <p
@@ -148,6 +143,27 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </p>
         )}
       </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="group block w-full cursor-pointer text-left transition-all duration-300"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group w-full cursor-pointer text-left transition-all duration-300"
+    >
+      {content}
     </button>
   );
 };

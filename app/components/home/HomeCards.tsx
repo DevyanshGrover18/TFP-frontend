@@ -1,30 +1,20 @@
 "use client";
 
-import { getAllProducts } from "@/app/services/productsService";
+import {
+  getAllProducts,
+  getProductDisplayColor,
+  getProductHref,
+  getProductPrimaryImage,
+  getProductSpecification,
+  type ProductRecord,
+} from "@/app/services/productsService";
 import React, { useEffect, useState } from "react";
 import ProductCard from "../common/ProductCard";
-
-type Product = {
-  _id: string;
-  productId: string;
-  sku: string;
-  name: string;
-  image: string;
-  categoryId: { _id: string; name: string };
-  subCategoryId: { _id: string; name: string };
-  subSubCategoryId: { _id: string; name: string };
-  composition: string;
-  color: string;
-  width: string;
-  weight: string;
-  badge?: string;
-  price?: string;
-};
 
 const MAX_VISIBLE_PRODUCTS = 8;
 
 const HomeCards = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
@@ -34,8 +24,7 @@ const HomeCards = () => {
         setLoading(true);
         setHasError(false);
         const response = await getAllProducts();
-        const data = (response.products ?? []) as Product[];
-        setProducts(data);
+        setProducts(response.products ?? []);
       } catch {
         setHasError(true);
       } finally {
@@ -43,7 +32,7 @@ const HomeCards = () => {
       }
     };
 
-    fetchProducts();
+    void fetchProducts();
   }, []);
 
   const visibleProducts = products.slice(0, MAX_VISIBLE_PRODUCTS);
@@ -54,7 +43,6 @@ const HomeCards = () => {
       style={{ backgroundColor: "#f5f3ee" }}
     >
       <div className="mx-auto max-w-7xl">
-        {/* Header row */}
         <div className="mb-8 flex items-center justify-between">
           <h2
             className="text-4xl italic text-stone-800 sm:text-5xl"
@@ -66,15 +54,14 @@ const HomeCards = () => {
             TFB Curations
           </h2>
 
-          <button
-            type="button"
+          <a
+            href="/products"
             className="text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-500 transition-colors hover:text-stone-800"
           >
             View All Selections
-          </button>
+          </a>
         </div>
 
-        {/* Grid */}
         {loading ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, index) => (
@@ -105,19 +92,15 @@ const HomeCards = () => {
               <ProductCard
                 key={product._id}
                 name={product.name}
-                image={product.image}
-                badge={product.badge}
-                price={product.price}
-                priceUnit="yard"
-                priceType="Wholesale"
+                image={getProductPrimaryImage(product)}
+                href={getProductHref(product)}
                 details={{
                   sku: product.sku,
-                  composition: product.composition,
-                  color: product.color,
-                  width: product.width,
-                  weight: product.weight,
+                  composition: getProductSpecification(product, "composition"),
+                  color: getProductDisplayColor(product),
+                  width: getProductSpecification(product, "width"),
+                  weight: getProductSpecification(product, "weight"),
                 }}
-                onClick={() => console.log("Go to product:", product._id)}
               />
             ))}
           </div>

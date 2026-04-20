@@ -14,21 +14,7 @@ import {
   getAllProducts,
   updateProduct,
 } from "@/app/services/productsService";
-
-type ProductRecord = {
-  _id: string;
-  productId: string;
-  sku: string;
-  name: string;
-  image: string;
-  categoryId: { _id: string; name: string };
-  subCategoryId: { _id: string; name: string };
-  subSubCategoryId: { _id: string; name: string };
-  composition: string;
-  color: string;
-  width: string;
-  weight: string;
-};
+import type { ProductRecord } from "@/app/services/productsService";
 
 type ProductModalState = {
   mode: "create" | "update";
@@ -129,14 +115,14 @@ export default function ProductsPage() {
     return {
       sku: modalState.product.sku,
       name: modalState.product.name,
-      image: modalState.product.image,
+      colorCode: modalState.product.colorCode,
       categoryId: modalState.product.categoryId._id,
       subCategoryId: modalState.product.subCategoryId._id,
       subSubCategoryId: modalState.product.subSubCategoryId._id,
-      composition: modalState.product.composition,
-      color: modalState.product.color,
-      width: modalState.product.width,
-      weight: modalState.product.weight,
+      description: modalState.product.description,
+      specifications: modalState.product.specifications,
+      media: modalState.product.media,
+      variants: modalState.product.variants,
     };
   }, [modalState.product]);
 
@@ -189,7 +175,7 @@ export default function ProductsPage() {
           </p>
           <h1 className="mt-2 text-3xl font-bold text-gray-900">Products</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
-            Manage products with a generated date-based product ID and a three-level category chain.
+            Manage product basics, variants, specifications, and image galleries in one flow.
           </p>
         </div>
 
@@ -228,6 +214,7 @@ export default function ProductsPage() {
                   <th className="px-5 py-4 font-medium">SKU</th>
                   <th className="px-5 py-4 font-medium">Image</th>
                   <th className="px-5 py-4 font-medium">Name</th>
+                  <th className="px-5 py-4 font-medium">Color Code</th>
                   <th className="px-5 py-4 font-medium">Category Path</th>
                   <th className="px-5 py-4 font-medium text-right">Actions</th>
                 </tr>
@@ -238,13 +225,20 @@ export default function ProductsPage() {
                     <td className="px-5 py-4 font-medium text-gray-900">{product.productId}</td>
                     <td className="px-5 py-4 text-gray-600">{product.sku}</td>
                     <td className="px-5 py-4">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="h-12 w-12 rounded-xl border border-gray-200 object-cover"
-                      />
+                      {product.media?.mainImage ? (
+                        <img
+                          src={product.media.mainImage}
+                          alt={product.name}
+                          className="h-12 w-12 rounded-xl border border-gray-200 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-gray-300 text-[11px] text-gray-400">
+                          No image
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-4 font-medium text-gray-900">{product.name}</td>
+                    <td className="px-5 py-4 text-gray-600">{product.colorCode}</td>
                     <td className="px-5 py-4 text-gray-600">
                       {[
                         product.categoryId?.name,
