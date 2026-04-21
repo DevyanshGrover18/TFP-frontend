@@ -35,3 +35,5 @@ export const logoutUser = async () =>
     method: "GET",
     onUnauthorizedRedirectTo: null,
   });
+
+export type { AuthUser, UserAuthResponse };

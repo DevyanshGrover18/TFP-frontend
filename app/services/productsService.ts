@@ -35,9 +35,9 @@ export type ProductRecord = {
   name: string;
   image : string;
   colorCode: string;
-  categoryId: { _id: string; name: string };
-  subCategoryId: { _id: string; name: string };
-  subSubCategoryId: { _id: string; name: string };
+  categoryId: string;
+  subCategoryId: string;
+  subSubCategoryId: string;
   description: string;
   specifications: Array<{
     key: string;
@@ -56,6 +56,31 @@ export type ProductRecord = {
     mainImage: string;
     gallery: string[];
   }>;
+};
+
+export type ProductFilterOption = {
+  id?: string;
+  value?: string;
+  label: string;
+  count: number;
+  parentId?: string;
+};
+
+export type ProductFilterGroup = {
+  key: string;
+  label: string;
+  values: ProductFilterOption[];
+};
+
+export type ProductFiltersResponse = {
+  success: boolean;
+  message?: string;
+  filters?: {
+    categories: ProductFilterOption[];
+    subCategories: ProductFilterOption[];
+    subSubCategories: ProductFilterOption[];
+    specifications: ProductFilterGroup[];
+  };
 };
 
 export function createProductSlug(name: string) {
@@ -94,6 +119,12 @@ export function getProductHref(product: ProductRecord) {
 
 export const getAllProducts = async () => {
   return fetchApi<{ products?: ProductRecord[] }>("/products", {
+    cache: "no-store",
+  });
+};
+
+export const getProductFilters = async () => {
+  return fetchApi<ProductFiltersResponse>("/products/filters", {
     cache: "no-store",
   });
 };

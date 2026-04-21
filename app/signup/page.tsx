@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
 import { signupUser } from "@/app/services/userAuthService";
+import { storeUser } from "@/app/services/userSession";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -37,6 +38,10 @@ export default function SignupPage() {
       if (!response.success) {
         setError(response.message ?? "Unable to create your account.");
         return;
+      }
+
+      if (response.user) {
+        storeUser(response.user);
       }
 
       toast.success("Account created successfully");

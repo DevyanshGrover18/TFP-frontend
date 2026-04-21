@@ -44,7 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <img
           src={image}
           alt={name}
-          className="aspect-[3/4] w-full object-cover transition-transform duration-700 group-hover:scale-105"
+          className="aspect-3/4 w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
 
         {badge && (

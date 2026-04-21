@@ -1,10 +1,12 @@
 import { fetchApi } from "./api";
 
-type CategoryPayload = {
-  name: string;
-  image: string;
-  parentId: string | null;
-};
+type Category = {
+  _id : string,
+  name : string
+  parentId? : string,
+  level : number,
+
+}
 
 export const getAllCategories = async () => {
   return fetchApi<{ categories?: unknown[] }>("/categories/tree", {
@@ -12,14 +14,14 @@ export const getAllCategories = async () => {
   });
 };
 
-export const createCategory = async (payload: CategoryPayload) => {
+export const createCategory = async (payload: Category) => {
   return fetchApi<{ category?: unknown }>("/categories", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 };
 
-export const updateCategory = async (id: string, payload: CategoryPayload) => {
+export const updateCategory = async (id: string, payload: Category) => {
   return fetchApi<{ category?: unknown }>(`/categories/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
@@ -31,3 +33,9 @@ export const deleteCategory = async (id: string) => {
     method: "DELETE",
   });
 };
+
+export const getCategoryById = async (id : string)=>{
+  return fetchApi<Category>(`/categories/${id}`, {
+    method : "GET"
+  })
+}

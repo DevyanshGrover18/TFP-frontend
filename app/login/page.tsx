@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
 import { loginUser } from "@/app/services/userAuthService";
+import { storeUser } from "@/app/services/userSession";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -31,6 +32,10 @@ export default function LoginPage() {
       if (!response.success) {
         setError(response.message ?? "Unable to sign in.");
         return;
+      }
+
+      if (response.user) {
+        storeUser(response.user);
       }
 
       toast.success("Signed in successfully");

@@ -3,15 +3,31 @@
 import React, { useState, useMemo, useEffect } from "react";
 import type { ProductRecord } from "@/app/services/productsService";
 import RecentlyViewed from "./RecentlyViewed";
+import { getCategoryById } from "@/app/services/categoriesService";
+import { addCartItem } from "@/app/services/cartService";
+import { getStoredUser } from "@/app/services/userSession";
+import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Variant = {
+type VariantOption = {
+  id: string;
+  variantId: string | null;
+  sku: string;
   name: string;
   color: string;
   colorCode: string;
   mainImage: string;
   gallery: string[];
+};
+
+type Category = {
+  _id: string;
+  name: string;
+  parentId?: string;
+  level: number;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -28,29 +44,21 @@ function getAllImages(product: ProductRecord): string[] {
   );
 }
 
-type VariantOption = {
-  id: string;
-  sku: string;
-  name: string;
-  color: string;
-  colorCode: string;
-  mainImage: string;
-  gallery: string[];
-};
-
 function buildVariantOptions(product: ProductRecord): VariantOption[] {
   const base: VariantOption = {
     id: product._id,
+    variantId: null,
     sku: product.sku,
     name: product.name,
     color: product.color,
     colorCode: product.colorCode,
     mainImage: product.media?.mainImage || product.image,
-    gallery: product.media?.gallery,
+    gallery: product.media?.gallery ?? [],
   };
 
   const fromVariants: VariantOption[] = product.variants.map((v, i) => ({
     id: `${v.name}-${i}`,
+    variantId: v.id ?? `${v.name}-${i}`,
     sku: v.sku,
     name: v.name,
     color: v.color,
@@ -60,13 +68,6 @@ function buildVariantOptions(product: ProductRecord): VariantOption[] {
   }));
 
   return [base, ...fromVariants];
-}
-
-function spec(product: ProductRecord, key: string): string {
-  const found = product.specifications?.find(
-    (s) => s.key?.toLowerCase() === key.toLowerCase(),
-  );
-  return found?.value || "";
 }
 
 // ─── VariantCard ──────────────────────────────────────────────────────────────
@@ -87,7 +88,7 @@ const VariantCard = ({ variant, isSelected, onClick }: VariantCardProps) => (
         : "border-[#e2dbd0] hover:border-[#b8b0a6]"
     }`}
   >
-    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xs border border-[#ddd5ca] bg-neutral">
+    <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xs border border-[#ddd5ca] bg-neutral">
       <img
         src={variant.mainImage}
         alt={variant.name}
@@ -95,7 +96,7 @@ const VariantCard = ({ variant, isSelected, onClick }: VariantCardProps) => (
       />
     </div>
     <div className="min-w-0 flex-1">
-      <p className="text-md font-serif font-semibold text-[#171512] truncate">
+      <p className="text-sm font-serif font-semibold text-[#171512] truncate">
         {variant.name}
       </p>
       <p className="text-xs uppercase tracking-[0.16em] text-[#9a9088]">
@@ -108,9 +109,9 @@ const VariantCard = ({ variant, isSelected, onClick }: VariantCardProps) => (
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const ProductDetail = ({ product }: { product: ProductRecord }) => {
-  // console.log(product);
   const allImages = useMemo(() => getAllImages(product), [product]);
   const variantOptions = useMemo(() => buildVariantOptions(product), [product]);
+  const router = useRouter();
 
   const [activeImage, setActiveImage] = useState(
     product.media?.mainImage || product.image || allImages[0] || "",
@@ -118,9 +119,13 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
   const [activeVariantId, setActiveVariantId] = useState(
     variantOptions[0]?.id ?? "",
   );
-  const [activeVarientImages, setActiveVarientImages] = useState<string[]>(
-    product.media?.gallery,
+  const [activeVariantImages, setActiveVariantImages] = useState<string[]>(
+    product.media?.gallery ?? [],
   );
+  const [categoryName, setCategoryName] = useState("");
+  const [subCategoryName, setSubCategoryName] = useState("");
+  const [subSubCategoryName, setSubSubCategoryName] = useState("");
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   useEffect(() => {
     const oldList: ProductRecord[] = JSON.parse(
@@ -129,66 +134,137 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
     const filtered = oldList.filter((p) => p._id !== product._id);
     const newList = [product, ...filtered].slice(0, 10);
     sessionStorage.setItem("recentlyViewed", JSON.stringify(newList));
-  }, []);
+  }, [product]);
+
+  useEffect(() => {
+    const fetchNames = async () => {
+      const getCategoryName = async (id: string): Promise<string> => {
+        const category: Category = await getCategoryById(id);
+        return category.name;
+      };
+      const [cat, sub, subsub] = await Promise.all([
+        getCategoryName(product.categoryId),
+        getCategoryName(product.subCategoryId),
+        getCategoryName(product.subSubCategoryId),
+      ]);
+      setCategoryName(cat);
+      setSubCategoryName(sub);
+      setSubSubCategoryName(subsub);
+    };
+    fetchNames();
+  }, [product]);
+
+  const selectedVariant =
+    variantOptions.find((variant) => variant.id === activeVariantId) ??
+    variantOptions[0];
+
+  const handleAddToCart = async () => {
+    const user = getStoredUser();
+
+    if (!user?.id) {
+      toast.error("Please sign in to add items to your cart.");
+      router.push("/login");
+      return;
+    }
+
+    try {
+      setIsAddingToCart(true);
+
+      const response = await addCartItem({
+        userId: user.id,
+        productId: product._id,
+        variantId: selectedVariant?.variantId ?? null,
+      });
+
+      toast.success(response.message ?? "Item added to cart");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to add item to cart.",
+      );
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
 
   return (
     <div
       className="bg-neutral text-[#171512] min-h-screen"
       style={{ fontFamily: "system-ui, sans-serif" }}
     >
-      {/* ── PAGE BODY ────────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-[1260px] px-6 pt-24 pb-24">
+      <div className="mx-auto max-w-[1260px] px-4 sm:px-6 pb-24">
+
+        {/* ── Breadcrumb ───────────────────────────────────────────────── */}
+        <nav className="flex items-center flex-wrap gap-2 text-xs uppercase tracking-[0.22em] font-semibold text-[#9a9088] my-8 sm:my-10">
+          <Link href="/" className="hover:text-[#171512] transition-colors duration-200">
+            Home
+          </Link>
+          <span className="text-[#ddd6cc]">/</span>
+          <span className="cursor-not-allowed">{categoryName}</span>
+          <span className="text-[#ddd6cc]">/</span>
+          <span className="cursor-not-allowed">{subCategoryName}</span>
+          <span className="text-[#ddd6cc]">/</span>
+          <Link
+            href={`/products?subsubcategory=${subSubCategoryName}`}
+            className="text-[#171512] hover:text-[#9a9088] transition-colors duration-200"
+          >
+            {subSubCategoryName}
+          </Link>
+        </nav>
+
         {/* ── HERO ─────────────────────────────────────────────────────── */}
-        <section className="grid grid-cols-[1fr_400px] gap-14 items-start">
-          {/* LEFT — main image + corner thumbnails */}
-          <div className="flex flex-col gap-5">
+        <section className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 lg:gap-14 items-start">
+
+          {/* LEFT — main image + thumbnails */}
+          <div className="flex flex-col gap-4 sm:gap-5">
             <div className="overflow-hidden rounded-sm bg-[#e8e2d6]">
               <img
                 src={activeImage}
                 alt={product.name}
-                className="w-full aspect-[1.05] hover:scale-105 object-cover  transition-transform duration-300"
+                className="w-full aspect-[1.05] hover:scale-105 object-cover transition-transform duration-300"
               />
             </div>
-            <div className="flex gap-4">
-              {activeVarientImages.map((src) => {
-                return (
-                  <button
-                    className="cursor-pointer"
-                    onClick={() => setActiveImage(src)}
-                    key={`${product._id}-${product.name}-${src}`}
-                  >
-                    <img
-                      src={src}
-                      alt={product.name}
-                      className="w-36 aspect-[1.05] hover:scale-105 object-cover transition-transform duration-300"
-                    />
-                  </button>
-                );
-              })}
+            {/* Thumbnails — horizontal scroll on mobile */}
+            <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-hide">
+              {activeVariantImages.map((src) => (
+                <button
+                  key={`${product._id}-${src}`}
+                  onClick={() => setActiveImage(src)}
+                  className={`shrink-0 overflow-hidden rounded-xs transition-all duration-200 ${
+                    activeImage === src
+                      ? "ring-2 ring-[#171512] ring-offset-1"
+                      : "opacity-70 hover:opacity-100"
+                  }`}
+                >
+                  <img
+                    src={src}
+                    alt={product.name}
+                    className="w-20 sm:w-28 md:w-32 aspect-[1.05] object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </button>
+              ))}
             </div>
           </div>
 
           {/* RIGHT — product info */}
-          <div className="pt-1">
-            {/* SKU line */}
+          <div className="pt-0 lg:pt-1">
+            {/* SKU */}
             <p className="text-[10px] uppercase tracking-[0.26em] text-[#9a9088]">
               SKU {product.sku}
             </p>
 
             {/* Name */}
             <h1
-              className="mt-2 text-[3.4rem] font-bold italic leading-[0.92] tracking-[-0.03em] text-[#11100f]"
+              className="mt-2 text-4xl sm:text-5xl lg:text-[3.4rem] font-bold italic leading-[0.92] tracking-[-0.03em] text-[#11100f]"
               style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
             >
               {product.name}
             </h1>
 
             {/* Variants */}
-            <div className="mt-8">
+            <div className="mt-7 sm:mt-8">
               <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#7a736c] border-b border-[#ddd6cc] pb-2.5">
                 Colors &amp; Variants [{variantOptions.length}]
               </p>
-
               <div className="mt-3 flex flex-col gap-2">
                 {variantOptions.map((v) => (
                   <VariantCard
@@ -198,7 +274,7 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
                     onClick={() => {
                       setActiveVariantId(v.id);
                       setActiveImage(v.mainImage);
-                      setActiveVarientImages(v.gallery);
+                      setActiveVariantImages(v.gallery ?? []);
                     }}
                   />
                 ))}
@@ -208,9 +284,11 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
             {/* CTA */}
             <button
               type="button"
-              className="mt-8 w-full rounded-[4px] bg-[#0d0c0b] px-6 py-3.5 text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-[#2c2924] transition-colors"
+              onClick={handleAddToCart}
+              disabled={isAddingToCart}
+              className="mt-7 sm:mt-8 w-full rounded-sm bg-[#0d0c0b] px-6 py-3.5 text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-[#2c2924] transition-colors disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Add to Bulk Order
+              {isAddingToCart ? "Adding..." : "Add to Bulk Order"}
               <span className="text-[15px] leading-none">→</span>
             </button>
 
@@ -229,23 +307,23 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
         </section>
 
         {/* ── SPECS + PRODUCT DETAILS ──────────────────────────────────── */}
-        <section className="mt-14 grid grid-cols-[1fr_450px] gap-5">
+        <section className="mt-10 sm:mt-14 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-5">
+
           {/* Specifications */}
-          <div className="rounded-md shadow-md bg-white p-8">
+          <div className="rounded-md shadow-md bg-white p-6 sm:p-8">
             <h2
-              className="text-[1.6rem] font-bold text-[#11100f]"
+              className="text-2xl sm:text-[1.6rem] font-bold text-[#11100f]"
               style={{ fontFamily: "Georgia, serif" }}
             >
               Specifications
             </h2>
-
-            <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-6">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 sm:gap-y-6">
               {product.specifications.map((row) => (
                 <div key={row.key}>
-                  <p className="text-md uppercase tracking-[0.2em] text-[#9a9088] mb-1">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-[#9a9088] mb-1">
                     {row.key}
                   </p>
-                  <p className="text-lg font-medium text-[#1b1916] leading-[1.4]">
+                  <p className="text-base sm:text-lg font-medium text-[#1b1916] leading-[1.4]">
                     {row.value}
                   </p>
                 </div>
@@ -254,20 +332,19 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
           </div>
 
           {/* Product Details */}
-          <div className="rounded-[6px] border border-[#ddd6cc] bg-[#ede8e0] p-8">
+          <div className="rounded-md border border-[#ddd6cc] bg-[#ede8e0] p-6 sm:p-8">
             <h2
-              className="text-[1.6rem] font-bold italic text-[#11100f]"
+              className="text-2xl sm:text-[1.6rem] font-bold italic text-[#11100f]"
               style={{ fontFamily: "Georgia, serif" }}
             >
               Product Details
             </h2>
-
             <div className="mt-5">
               <p
                 className="text-[13px] italic leading-[1.8] text-[#4a443d]"
                 style={{ fontFamily: "Georgia, serif" }}
               >
-                "{product.description || "No description available."}"
+                &quot;{product.description || "No description available."}&quot;
               </p>
 
               <p className="mt-4 text-[12px] leading-[1.7] text-[#6b635c]">
@@ -312,7 +389,8 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
             </div>
           </div>
         </section>
-        <RecentlyViewed/>
+
+        <RecentlyViewed />
       </div>
     </div>
   );
