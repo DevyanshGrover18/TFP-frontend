@@ -116,9 +116,9 @@ export default function ProductsPage() {
       sku: modalState.product.sku,
       name: modalState.product.name,
       colorCode: modalState.product.colorCode,
-      categoryId: modalState.product.categoryId._id,
-      subCategoryId: modalState.product.subCategoryId._id,
-      subSubCategoryId: modalState.product.subSubCategoryId._id,
+      categoryId: modalState.product.categoryId,
+      subCategoryId: modalState.product.subCategoryId,
+      subSubCategoryId: modalState.product.subSubCategoryId,
       description: modalState.product.description,
       specifications: modalState.product.specifications,
       media: modalState.product.media,
@@ -241,9 +241,9 @@ export default function ProductsPage() {
                     <td className="px-5 py-4 text-gray-600">{product.colorCode}</td>
                     <td className="px-5 py-4 text-gray-600">
                       {[
-                        product.categoryId?.name,
-                        product.subCategoryId?.name,
-                        product.subSubCategoryId?.name,
+                        product.categoryId,
+                        product.subCategoryId,
+                        product.subSubCategoryId,
                       ]
                         .filter(Boolean)
                         .join(" / ")}

@@ -95,7 +95,7 @@ const HomeSection3 = () => {
                 name={activeProduct.name}
                 image={getProductPrimaryImage(activeProduct)}
                 href={getProductHref(activeProduct)}
-                category={activeProduct.categoryId?.name}
+                category={activeProduct.categoryId}
                 details={{
                   sku: activeProduct.sku,
                   composition: getProductSpecification(activeProduct, "composition"),
