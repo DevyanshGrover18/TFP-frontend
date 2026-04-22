@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Users,
   ClipboardList,
+  UserStar,
 } from "lucide-react";
 
 type NavItem = {
@@ -22,6 +23,7 @@ const navItems: NavItem[] = [
   { href: "/admin/category", label: "Category", icon: <Folders size={18} /> },
   { href: "/admin/products", label: "Products", icon: <ShoppingBag size={18} /> },
   { href: "/admin/users", label: "Users", icon: <Users size={18} /> },
+  { href: "/admin/special-users", label: "Special Users", icon: <UserStar size={18} /> },
   { href: "/admin/orders", label: "Orders", icon: <ClipboardList size={18} /> },
 ];
 

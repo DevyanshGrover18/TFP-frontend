@@ -171,7 +171,6 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
       setIsAddingToCart(true);
 
       const response = await addCartItem({
-        userId: user.id,
         productId: product._id,
         variantId: selectedVariant?.variantId ?? null,
       });

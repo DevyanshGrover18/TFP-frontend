@@ -5,6 +5,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { Search, User, ShoppingBag, ChevronDown, Menu, X } from "lucide-react";
 import { getAllCategories } from "@/app/services/categoriesService";
 import { useRouter } from "next/navigation";
+import SpecialUserLoginModal from "../specialUsers/SpecialUserLoginModal";
+import { useAuth } from "@/app/context/AuthContext";
 
 type CategoryNode = {
   _id: string;
@@ -15,7 +17,38 @@ type CategoryNode = {
   children?: CategoryNode[];
 };
 
-// ─── Mega Menu (desktop) ──────────────────────────────────────────────────────
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+// Recursively filter the category tree to only include nodes whose _id
+// is in allowedIds, keeping parent nodes that have at least one allowed child.
+function filterCategoryTree(
+  nodes: CategoryNode[],
+  allowedIds: string[],
+): CategoryNode[] {
+  const allowed = new Set(allowedIds);
+
+  function walk(node: CategoryNode): CategoryNode | null {
+    // If this node itself is allowed, keep it with all its children
+    if (allowed.has(node._id)) return node;
+
+    // Otherwise recurse into children
+    if (node.children && node.children.length > 0) {
+      const filteredChildren = node.children
+        .map(walk)
+        .filter(Boolean) as CategoryNode[];
+
+      if (filteredChildren.length > 0) {
+        return { ...node, children: filteredChildren };
+      }
+    }
+
+    return null;
+  }
+
+  return nodes.map(walk).filter(Boolean) as CategoryNode[];
+}
+
+// ─── Mega Menu ────────────────────────────────────────────────────────────────
 
 const MegaMenu = ({
   category,
@@ -83,21 +116,20 @@ const MobileDrawer = ({
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className={`fixed inset-0 z-40 bg-black/30 transition-opacity duration-300 md:hidden ${
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          isOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
       />
 
-      {/* Drawer panel */}
       <div
         className={`fixed top-0 left-0 z-50 h-full w-[300px] bg-neutral flex flex-col transition-transform duration-300 ease-in-out md:hidden ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Drawer header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#ddd6cc]">
           <Link
             href="/"
@@ -115,7 +147,6 @@ const MobileDrawer = ({
           </button>
         </div>
 
-        {/* Drawer nav */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {categories.map((category) => {
             const hasChildren = (category.children?.length ?? 0) > 0;
@@ -133,22 +164,26 @@ const MobileDrawer = ({
                   {hasChildren && (
                     <ChevronDown
                       size={14}
-                      className={`text-[#9a9088] transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                      className={`text-[#9a9088] transition-transform duration-200 ${
+                        isExpanded ? "rotate-180" : ""
+                      }`}
                     />
                   )}
                 </button>
 
-                {/* Sub-categories */}
                 {hasChildren && isExpanded && (
                   <div className="pb-2 pl-3">
                     {category.children!.map((child) => {
-                      const hasGrandChildren = (child.children?.length ?? 0) > 0;
+                      const hasGrandChildren =
+                        (child.children?.length ?? 0) > 0;
                       const isSubExpanded = expandedSubId === child._id;
 
                       return (
                         <div key={child._id}>
                           <button
-                            onClick={() => hasGrandChildren && toggleSub(child._id)}
+                            onClick={() =>
+                              hasGrandChildren && toggleSub(child._id)
+                            }
                             className="flex items-center justify-between w-full px-2 py-2 text-left"
                           >
                             <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7a736c]">
@@ -157,12 +192,13 @@ const MobileDrawer = ({
                             {hasGrandChildren && (
                               <ChevronDown
                                 size={12}
-                                className={`text-[#b8b0a6] transition-transform duration-200 ${isSubExpanded ? "rotate-180" : ""}`}
+                                className={`text-[#b8b0a6] transition-transform duration-200 ${
+                                  isSubExpanded ? "rotate-180" : ""
+                                }`}
                               />
                             )}
                           </button>
 
-                          {/* Sub-sub-categories */}
                           {hasGrandChildren && isSubExpanded && (
                             <ul className="pb-2 pl-3 space-y-1">
                               {child.children!.map((sub) => (
@@ -187,7 +223,6 @@ const MobileDrawer = ({
             );
           })}
 
-          {/* Special link */}
           <div className="border-b border-[#f0ebe4]">
             <button className="flex w-full px-2 py-3.5 text-left text-sm italic font-medium text-[#171512]">
               Special
@@ -195,10 +230,9 @@ const MobileDrawer = ({
           </div>
         </div>
 
-        {/* Drawer footer */}
         <div className="border-t border-[#ddd6cc] px-6 py-5 flex items-center gap-5">
           <Link
-            href="/login"
+            href="/account"
             onClick={onClose}
             className="flex items-center gap-1.5 text-xs uppercase tracking-widest text-[#171512] hover:text-[#9a9088] transition-colors font-sans"
           >
@@ -216,19 +250,35 @@ const MobileDrawer = ({
 const Navbar = () => {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [categories, setCategories] = useState<CategoryNode[]>([]);
-  const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(null);
+  const [allCategories, setAllCategories] = useState<CategoryNode[]>([]);
+  const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(
+    null,
+  );
+  const [isSpecialUserModalOpen, setIsSpecialUserModalOpen] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const navRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  const { isSpecialSession, specialUser, loginAsSpecialUser, logout } =
+    useAuth();
+
+  // Visible categories — filtered for special session, full list otherwise
+  const visibleCategories =
+    isSpecialSession && specialUser?.allowedCategories.length
+      ? filterCategoryTree(allCategories, specialUser.allowedCategories)
+      : allCategories;
+
   useEffect(() => {
-    getCategories();
+    void loadCategories();
   }, []);
 
-  const handleNavigate = (slug: string) => {
-    router.replace(`/${slug}`);
+  const loadCategories = async () => {
+    const response = await getAllCategories();
+    setAllCategories((response?.categories ?? []) as CategoryNode[]);
   };
 
   useEffect(() => {
@@ -246,16 +296,39 @@ const Navbar = () => {
     if (searchOpen) searchRef.current?.focus();
   }, [searchOpen]);
 
-  // Lock body scroll when mobile drawer is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [mobileOpen]);
 
-  const getCategories = async () => {
-    const response = await getAllCategories();
-    const data = (response?.categories ?? []) as CategoryNode[];
-    setCategories(data);
+  // Close active mega menu if it's no longer in visible categories after login
+  useEffect(() => {
+    if (
+      activeCategory &&
+      !visibleCategories.find((c) => c._id === activeCategory._id)
+    ) {
+      setActiveCategory(null);
+    }
+  }, [visibleCategories, activeCategory]);
+
+  const handleSpecialUserLogin = async (values: {
+    email: string;
+    password: string;
+  }) => {
+    setIsLoggingIn(true);
+    setLoginError("");
+    try {
+      await loginAsSpecialUser(values.email, values.password);
+      setIsSpecialUserModalOpen(false);
+    } catch (err) {
+      setLoginError(
+        err instanceof Error ? err.message : "Login failed. Please try again.",
+      );
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const handleCategoryClick = (category: CategoryNode) => {
@@ -264,7 +337,9 @@ const Navbar = () => {
       setActiveCategory(null);
       return;
     }
-    setActiveCategory((prev) => (prev?._id === category._id ? null : category));
+    setActiveCategory((prev) =>
+      prev?._id === category._id ? null : category,
+    );
   };
 
   return (
@@ -274,8 +349,7 @@ const Navbar = () => {
         className="w-full relative bg-neutral border-b border-tertiary"
       >
         <div className="flex items-center justify-between px-5 sm:px-8 md:px-14 py-4 gap-4">
-
-          {/* Hamburger — mobile only */}
+          {/* Hamburger */}
           <button
             className="md:hidden text-primary hover:text-secondary transition-colors"
             onClick={() => setMobileOpen(true)}
@@ -294,9 +368,9 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Desktop nav links */}
+          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-7">
-            {categories.map((category) => {
+            {visibleCategories.map((category) => {
               const hasChildren = (category.children?.length ?? 0) > 0;
               const isActive = activeCategory?._id === category._id;
 
@@ -304,7 +378,7 @@ const Navbar = () => {
                 <button
                   key={category._id}
                   onClick={() => handleCategoryClick(category)}
-                  className={`flex items-center gap-1 text-md font-sans italic font-medium transition-colors duration-150 pb-0.5 border-b-[1.5px] ${
+                  className={`flex items-center gap-1 text-md cursor-pointer font-sans italic font-medium transition-colors duration-150 pb-0.5 border-b-[1.5px] ${
                     isActive
                       ? "text-secondary border-secondary"
                       : "text-primary border-transparent hover:text-secondary"
@@ -314,22 +388,38 @@ const Navbar = () => {
                   {hasChildren && (
                     <ChevronDown
                       size={14}
-                      className={`text-tertiary transition-transform duration-200 ${isActive ? "rotate-180" : ""}`}
+                      className={`text-tertiary transition-transform duration-200 ${
+                        isActive ? "rotate-180" : ""
+                      }`}
                     />
                   )}
                 </button>
               );
             })}
 
-            <button className="text-md italic font-medium text-primary font-sans hover:text-secondary transition-colors duration-150 border-b-[1.5px] border-transparent pb-0.5">
-              Special
-            </button>
+            {/* Special button — opens modal if not logged in, logs out if active */}
+            {isSpecialSession ? (
+              <button
+                onClick={() => void logout()}
+                className="text-md italic cursor-pointer font-medium text-secondary font-sans hover:text-primary transition-colors duration-150 border-b-[1.5px] border-secondary pb-0.5"
+              >
+                Exit special
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setLoginError("");
+                  setIsSpecialUserModalOpen(true);
+                }}
+                className="text-md italic cursor-pointer font-medium text-primary font-sans hover:text-secondary transition-colors duration-150 border-b-[1.5px] border-transparent pb-0.5"
+              >
+                Special
+              </button>
+            )}
           </div>
 
           {/* Right icons */}
           <div className="flex items-center gap-3 sm:gap-5">
-
-            {/* Expandable search */}
             <div className="flex items-center gap-2">
               {searchOpen && (
                 <input
@@ -346,12 +436,14 @@ const Navbar = () => {
                 className="flex items-center gap-1.5 text-xs uppercase tracking-widest text-primary hover:text-secondary transition-colors duration-150 font-sans"
               >
                 <Search size={15} strokeWidth={1.5} />
-                {!searchOpen && <span className="hidden sm:inline">Search</span>}
+                {!searchOpen && (
+                  <span className="hidden sm:inline">Search</span>
+                )}
               </button>
             </div>
 
             <Link
-              href="/login"
+              href="/account"
               className="hidden sm:flex items-center gap-1.5 text-xs uppercase tracking-widest text-primary hover:text-secondary transition-colors duration-150 font-sans"
             >
               <User size={15} strokeWidth={1.5} />
@@ -359,16 +451,15 @@ const Navbar = () => {
             </Link>
 
             <button
-              onClick={() => handleNavigate("cart")}
+              onClick={() => router.replace("/cart")}
               className="text-primary cursor-pointer hover:text-secondary transition-colors duration-150"
             >
               <ShoppingBag size={18} strokeWidth={1.5} />
             </button>
-
           </div>
         </div>
 
-        {/* Desktop mega menu */}
+        {/* Mega menu */}
         {activeCategory && (
           <MegaMenu
             category={activeCategory}
@@ -377,9 +468,16 @@ const Navbar = () => {
         )}
       </nav>
 
-      {/* Mobile drawer — rendered outside nav so it can cover full screen */}
+      <SpecialUserLoginModal
+        isOpen={isSpecialUserModalOpen}
+        isLoading={isLoggingIn}
+        externalError={loginError}
+        onClose={() => setIsSpecialUserModalOpen(false)}
+        onSubmit={handleSpecialUserLogin}
+      />
+
       <MobileDrawer
-        categories={categories}
+        categories={visibleCategories}
         isOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
       />

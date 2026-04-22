@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Newsreader } from "next/font/google";
 import ToastProvider from "./components/common/ToastProvider";
 import "./globals.css";
+import { AuthProvider } from "./context/AuthContext";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -29,8 +30,10 @@ export default function RootLayout({
       className={`${manrope.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground font-sans">
-        {children}
-        <ToastProvider />
+        <AuthProvider>
+          {children}
+          <ToastProvider />
+        </AuthProvider>
       </body>
     </html>
   );

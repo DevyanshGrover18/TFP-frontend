@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import {
   getCartItems,
@@ -22,27 +23,27 @@ function getVariantLabel(item: CartItemRecord) {
 
 export default function CartDetails() {
   const [items, setItems] = useState<CartItemRecord[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [pendingRows, setPendingRows] = useState<PendingState>({});
+  const router = useRouter();
 
   useEffect(() => {
     const user = getStoredUser();
 
     if (!user?.id) {
-      setUserId(null);
-      setIsLoading(false);
+      setIsAuthorized(false);
+      router.replace("/login");
       return;
     }
-
-    setUserId(user.id);
+    setIsAuthorized(true);
 
     const loadCart = async () => {
       try {
         setIsLoading(true);
         setLoadError("");
-        const response = await getCartItems(user.id);
+        const response = await getCartItems();
         setItems(response.items ?? []);
       } catch (error) {
         setLoadError(
@@ -54,7 +55,7 @@ export default function CartDetails() {
     };
 
     loadCart();
-  }, []);
+  }, [router]);
 
   const totalItems = useMemo(() => items.length, [items]);
 
@@ -64,16 +65,11 @@ export default function CartDetails() {
   };
 
   const handleRemove = async (item: CartItemRecord) => {
-    if (!userId) {
-      return;
-    }
-
     const itemKey = getItemKey(item);
 
     try {
       setRowPending(itemKey, true);
       await removeCartItem({
-        userId,
         productId: item.productId,
         variantId: item.variantId,
       });
@@ -89,29 +85,8 @@ export default function CartDetails() {
     }
   };
 
-  if (!userId && !isLoading) {
-    return (
-      <div className="min-h-screen bg-[#fafaf5] px-6 py-20 text-[#1a1c19]">
-        <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center shadow-[0_20px_40px_rgba(26,28,25,0.06)]">
-          <h1
-            className="text-4xl italic text-[#01010f]"
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
-          >
-            Your Cart
-          </h1>
-          <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-[#47464c]">
-            Sign in to load your saved fabric selections and continue building your
-            bulk order.
-          </p>
-          <Link
-            href="/login"
-            className="mt-8 inline-flex rounded-md bg-[#01010f] px-6 py-3 text-xs font-bold uppercase tracking-[0.24em] text-white transition hover:bg-primary"
-          >
-            Sign In
-          </Link>
-        </div>
-      </div>
-    );
+  if (!isAuthorized) {
+    return null;
   }
 
   return (
@@ -309,9 +284,12 @@ export default function CartDetails() {
                 </div>
 
                 <div className="space-y-4">
-                  <button className="w-full rounded-md bg-[#01010f] py-5 text-[12px] font-bold uppercase tracking-[0.25em] text-white transition-all duration-300 hover:bg-primary active:scale-[0.98]">
+                  <Link
+                    href="/order-form"
+                    className="block w-full rounded-md bg-[#01010f] py-5 text-center text-[12px] font-bold uppercase tracking-[0.25em] text-white transition-all duration-300 hover:bg-primary active:scale-[0.98]"
+                  >
                     Proceed to Quote
-                  </button>
+                  </Link>
                   <button className="w-full rounded-md border border-[#c8c5cd] py-5 text-[12px] font-bold uppercase tracking-[0.25em] text-[#01010f] transition-all duration-300 hover:bg-white">
                     Save as Draft
                   </button>

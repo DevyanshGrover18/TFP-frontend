@@ -15,6 +15,7 @@ import {
   type ProductFilterOption,
   type ProductRecord,
 } from "../../services/productsService";
+import { useAuth } from "@/app/context/AuthContext";
 
 type SidebarFilterGroup = {
   key: string;
@@ -55,12 +56,11 @@ const matchesMultiValueFilter = (
   selectedValues: string[],
   candidate: string | undefined,
 ) => {
-  if (!selectedValues.length) {
-    return true;
-  }
-
+  if (!selectedValues.length) return true;
   return candidate ? selectedValues.includes(candidate) : false;
 };
+
+// ─── Sidebar filter section (unchanged) ──────────────────────────────────────
 
 function SidebarFilterSection({
   title,
@@ -75,9 +75,7 @@ function SidebarFilterSection({
   options: ProductFilterOption[];
   onToggle: (paramKey: string, value: string) => void;
 }) {
-  if (!options.length) {
-    return null;
-  }
+  if (!options.length) return null;
 
   return (
     <div className="mt-8 border-t border-stone-200 pt-6">
@@ -121,6 +119,8 @@ function SidebarFilterSection({
   );
 }
 
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 const ProductsPageDetails = () => {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [filters, setFilters] = useState<FiltersState>(EMPTY_FILTERS);
@@ -128,6 +128,16 @@ const ProductsPageDetails = () => {
   const [loadError, setLoadError] = useState("");
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // ── Auth: get allowed categories for special session ──
+  const { isSpecialSession, specialUser } = useAuth();
+  const allowedCategoryIds = useMemo(
+    () =>
+      isSpecialSession && specialUser?.allowedCategories.length
+        ? new Set(specialUser.allowedCategories)
+        : null, // null means no restriction
+    [isSpecialSession, specialUser],
+  );
 
   const selectedCategories = useMemo(
     () => getSelectedValues(searchParams, CATEGORY_PARAM),
@@ -146,11 +156,7 @@ const ProductsPageDetails = () => {
     () =>
       filters.specifications.reduce<Record<string, string[]>>((acc, group) => {
         const selectedValues = getSelectedValues(searchParams, group.key);
-
-        if (selectedValues.length) {
-          acc[group.key] = selectedValues;
-        }
-
+        if (selectedValues.length) acc[group.key] = selectedValues;
         return acc;
       }, {}),
     [filters.specifications, searchParams],
@@ -167,7 +173,7 @@ const ProductsPageDetails = () => {
           getProductFilters(),
         ]);
 
-        setProducts(productsResponse.products || []);
+        setProducts(productsResponse.products ?? []);
         setFilters(filtersResponse.filters ?? EMPTY_FILTERS);
       } catch (error) {
         setLoadError(
@@ -178,58 +184,96 @@ const ProductsPageDetails = () => {
       }
     };
 
-    fetchPageData();
+    void fetchPageData();
   }, []);
 
-  const visibleSubCategories = useMemo(() => {
-    if (!selectedCategories.length) {
-      return [];
-    }
+  // ── Products scoped to special session ───────────────────────────────────
+  // If allowedCategoryIds is set, only keep products whose categoryId,
+  // subCategoryId, OR subSubCategoryId is in the allowed set.
+  const scopedProducts = useMemo(() => {
+    if (!allowedCategoryIds) return products;
 
-    return filters.subCategories.filter(
-      (subCategory) =>
-        subCategory.parentId && selectedCategories.includes(subCategory.parentId),
+    return products.filter((product) => {
+      const catId = getProductRefId(product.categoryId as ProductRef);
+      const subCatId = getProductRefId(product.subCategoryId as ProductRef);
+      const subSubCatId = getProductRefId(product.subSubCategoryId as ProductRef);
+
+      return (
+        (catId && allowedCategoryIds.has(catId)) ||
+        (subCatId && allowedCategoryIds.has(subCatId)) ||
+        (subSubCatId && allowedCategoryIds.has(subSubCatId))
+      );
+    });
+  }, [products, allowedCategoryIds]);
+
+  // ── Scoped filters (only show filter options present in scopedProducts) ──
+  const scopedFilters = useMemo<FiltersState>(() => {
+    if (!allowedCategoryIds) return filters;
+
+    const scopedCatIds = new Set(
+      scopedProducts
+        .map((p) => getProductRefId(p.categoryId as ProductRef))
+        .filter(Boolean) as string[],
     );
-  }, [filters.subCategories, selectedCategories]);
+    const scopedSubCatIds = new Set(
+      scopedProducts
+        .map((p) => getProductRefId(p.subCategoryId as ProductRef))
+        .filter(Boolean) as string[],
+    );
+    const scopedSubSubCatIds = new Set(
+      scopedProducts
+        .map((p) => getProductRefId(p.subSubCategoryId as ProductRef))
+        .filter(Boolean) as string[],
+    );
+
+    return {
+      categories: filters.categories.filter((c) => c.id && scopedCatIds.has(c.id)),
+      subCategories: filters.subCategories.filter(
+        (c) => c.id && scopedSubCatIds.has(c.id),
+      ),
+      subSubCategories: filters.subSubCategories.filter(
+        (c) => c.id && scopedSubSubCatIds.has(c.id),
+      ),
+      specifications: filters.specifications,
+    };
+  }, [filters, scopedProducts, allowedCategoryIds]);
+
+  // All downstream logic now uses scopedProducts + scopedFilters
+  // instead of products + filters directly.
+
+  const visibleSubCategories = useMemo(() => {
+    if (!selectedCategories.length) return [];
+    return scopedFilters.subCategories.filter(
+      (sub) => sub.parentId && selectedCategories.includes(sub.parentId),
+    );
+  }, [scopedFilters.subCategories, selectedCategories]);
 
   const visibleSubSubCategories = useMemo(() => {
-    if (!selectedSubCategories.length) {
-      return [];
-    }
-
-    return filters.subSubCategories.filter(
-      (subSubCategory) =>
-        subSubCategory.parentId &&
-        selectedSubCategories.includes(subSubCategory.parentId),
+    if (!selectedSubCategories.length) return [];
+    return scopedFilters.subSubCategories.filter(
+      (sub) => sub.parentId && selectedSubCategories.includes(sub.parentId),
     );
-  }, [filters.subSubCategories, selectedSubCategories]);
+  }, [scopedFilters.subSubCategories, selectedSubCategories]);
 
   const matchesSpecificationFilters = (
     product: ProductRecord,
     specificationFilters: Record<string, string[]>,
   ) => {
     for (const [key, selectedValues] of Object.entries(specificationFilters)) {
-      if (!selectedValues.length) {
-        continue;
-      }
-
+      if (!selectedValues.length) continue;
       const hasMatch = product.specifications.some(
-        (specification) =>
-          specification.key.trim().toLowerCase() === key &&
-          selectedValues.includes(specification.value),
+        (spec) =>
+          spec.key.trim().toLowerCase() === key &&
+          selectedValues.includes(spec.value),
       );
-
-      if (!hasMatch) {
-        return false;
-      }
+      if (!hasMatch) return false;
     }
-
     return true;
   };
 
   const getProductsForCounts = useCallback(
     ({ ignoreParamKey }: { ignoreParamKey?: string }) =>
-      products.filter((product) => {
+      scopedProducts.filter((product) => {
         const categoryId = getProductRefId(product.categoryId as ProductRef);
         const subCategoryId = getProductRefId(product.subCategoryId as ProductRef);
         const subSubCategoryId = getProductRefId(product.subSubCategoryId as ProductRef);
@@ -237,23 +281,20 @@ const ProductsPageDetails = () => {
         if (
           ignoreParamKey !== CATEGORY_PARAM &&
           !matchesMultiValueFilter(selectedCategories, categoryId)
-        ) {
+        )
           return false;
-        }
 
         if (
           ignoreParamKey !== SUB_CATEGORY_PARAM &&
           !matchesMultiValueFilter(selectedSubCategories, subCategoryId)
-        ) {
+        )
           return false;
-        }
 
         if (
           ignoreParamKey !== SUB_SUB_CATEGORY_PARAM &&
           !matchesMultiValueFilter(selectedSubSubCategories, subSubCategoryId)
-        ) {
+        )
           return false;
-        }
 
         const specificationFilters =
           ignoreParamKey &&
@@ -270,7 +311,7 @@ const ProductsPageDetails = () => {
         return matchesSpecificationFilters(product, specificationFilters);
       }),
     [
-      products,
+      scopedProducts,
       selectedCategories,
       selectedSubCategories,
       selectedSubSubCategories,
@@ -280,27 +321,19 @@ const ProductsPageDetails = () => {
 
   const filteredProducts = useMemo(
     () =>
-      products.filter((product) => {
+      scopedProducts.filter((product) => {
         const categoryId = getProductRefId(product.categoryId as ProductRef);
         const subCategoryId = getProductRefId(product.subCategoryId as ProductRef);
         const subSubCategoryId = getProductRefId(product.subSubCategoryId as ProductRef);
 
-        if (!matchesMultiValueFilter(selectedCategories, categoryId)) {
-          return false;
-        }
-
-        if (!matchesMultiValueFilter(selectedSubCategories, subCategoryId)) {
-          return false;
-        }
-
-        if (!matchesMultiValueFilter(selectedSubSubCategories, subSubCategoryId)) {
-          return false;
-        }
+        if (!matchesMultiValueFilter(selectedCategories, categoryId)) return false;
+        if (!matchesMultiValueFilter(selectedSubCategories, subCategoryId)) return false;
+        if (!matchesMultiValueFilter(selectedSubSubCategories, subSubCategoryId)) return false;
 
         return matchesSpecificationFilters(product, selectedSpecificationFilters);
       }),
     [
-      products,
+      scopedProducts,
       selectedCategories,
       selectedSubCategories,
       selectedSubSubCategories,
@@ -310,37 +343,32 @@ const ProductsPageDetails = () => {
 
   const categoryOptions = useMemo(() => {
     const baseProducts = getProductsForCounts({ ignoreParamKey: CATEGORY_PARAM });
-
-    return filters.categories
+    return scopedFilters.categories
       .map((option) => ({
         ...option,
         count: baseProducts.filter(
-          (product) => getProductRefId(product.categoryId as ProductRef) === option.id,
+          (p) => getProductRefId(p.categoryId as ProductRef) === option.id,
         ).length,
       }))
-      .filter((option) => option.count > 0 || selectedCategories.includes(option.id ?? ""));
-  }, [
-    filters.categories,
-    selectedCategories,
-    getProductsForCounts,
-  ]);
+      .filter(
+        (option) =>
+          option.count > 0 || selectedCategories.includes(option.id ?? ""),
+      );
+  }, [scopedFilters.categories, selectedCategories, getProductsForCounts]);
 
   const subCategoryOptions = useMemo(() => {
-    if (!selectedCategories.length) {
-      return [];
-    }
-
+    if (!selectedCategories.length) return [];
     const baseProducts = getProductsForCounts({ ignoreParamKey: SUB_CATEGORY_PARAM });
-
     return visibleSubCategories
       .map((option) => ({
         ...option,
         count: baseProducts.filter(
-          (product) => getProductRefId(product.subCategoryId as ProductRef) === option.id,
+          (p) => getProductRefId(p.subCategoryId as ProductRef) === option.id,
         ).length,
       }))
       .filter(
-        (option) => option.count > 0 || selectedSubCategories.includes(option.id ?? ""),
+        (option) =>
+          option.count > 0 || selectedSubCategories.includes(option.id ?? ""),
       );
   }, [
     visibleSubCategories,
@@ -350,23 +378,21 @@ const ProductsPageDetails = () => {
   ]);
 
   const subSubCategoryOptions = useMemo(() => {
-    if (!selectedSubCategories.length) {
-      return [];
-    }
-
-    const baseProducts = getProductsForCounts({ ignoreParamKey: SUB_SUB_CATEGORY_PARAM });
-
+    if (!selectedSubCategories.length) return [];
+    const baseProducts = getProductsForCounts({
+      ignoreParamKey: SUB_SUB_CATEGORY_PARAM,
+    });
     return visibleSubSubCategories
       .map((option) => ({
         ...option,
         count: baseProducts.filter(
-          (product) =>
-            getProductRefId(product.subSubCategoryId as ProductRef) === option.id,
+          (p) => getProductRefId(p.subSubCategoryId as ProductRef) === option.id,
         ).length,
       }))
       .filter(
         (option) =>
-          option.count > 0 || selectedSubSubCategories.includes(option.id ?? ""),
+          option.count > 0 ||
+          selectedSubSubCategories.includes(option.id ?? ""),
       );
   }, [
     visibleSubSubCategories,
@@ -379,22 +405,22 @@ const ProductsPageDetails = () => {
     () =>
       filters.specifications
         .map((group) => {
-          const baseProducts = getProductsForCounts({ ignoreParamKey: group.key });
-
+          const baseProducts = getProductsForCounts({
+            ignoreParamKey: group.key,
+          });
           return {
             key: group.key,
             label: group.label,
             values: group.values
               .map((option) => {
                 const optionValue = option.value ?? option.label;
-
                 return {
                   ...option,
-                  count: baseProducts.filter((product) =>
-                    product.specifications.some(
-                      (specification) =>
-                        specification.key.trim().toLowerCase() === group.key &&
-                        specification.value === optionValue,
+                  count: baseProducts.filter((p) =>
+                    p.specifications.some(
+                      (spec) =>
+                        spec.key.trim().toLowerCase() === group.key &&
+                        spec.value === optionValue,
                     ),
                   ).length,
                 };
@@ -403,33 +429,30 @@ const ProductsPageDetails = () => {
                 (option) =>
                   option.count > 0 ||
                   (option.value &&
-                    (selectedSpecificationFilters[group.key] ?? []).includes(option.value)),
+                    (selectedSpecificationFilters[group.key] ?? []).includes(
+                      option.value,
+                    )),
               ),
           };
         })
         .filter((group) => group.values.length > 0),
-    [
-      filters.specifications,
-      selectedSpecificationFilters,
-      getProductsForCounts,
-    ],
+    [filters.specifications, selectedSpecificationFilters, getProductsForCounts],
   );
 
   const activeTitle = useMemo(() => {
-    if (selectedSubSubCategories.length) {
+    if (selectedSubSubCategories.length)
       return `${selectedSubSubCategories.length} sub-sub-category selections`;
-    }
-
-    if (selectedSubCategories.length) {
+    if (selectedSubCategories.length)
       return `${selectedSubCategories.length} sub-category selections`;
-    }
-
-    if (selectedCategories.length) {
+    if (selectedCategories.length)
       return `${selectedCategories.length} category selections`;
-    }
-
-    return "All products";
-  }, [selectedCategories, selectedSubCategories, selectedSubSubCategories]);
+    return isSpecialSession ? "Your catalog" : "All products";
+  }, [
+    selectedCategories,
+    selectedSubCategories,
+    selectedSubSubCategories,
+    isSpecialSession,
+  ]);
 
   const hasActiveFilters =
     selectedCategories.length > 0 ||
@@ -450,26 +473,27 @@ const ProductsPageDetails = () => {
     if (paramKey === CATEGORY_PARAM) {
       const allowedSubCategories = filters.subCategories
         .filter(
-          (subCategory) =>
-            subCategory.parentId && nextValues.includes(subCategory.parentId),
+          (sub) => sub.parentId && nextValues.includes(sub.parentId),
         )
-        .map((subCategory) => subCategory.id)
+        .map((sub) => sub.id)
         .filter(Boolean) as string[];
 
-      const nextSubCategories = getSelectedValues(params, SUB_CATEGORY_PARAM).filter(
-        (item) => allowedSubCategories.includes(item),
-      );
+      const nextSubCategories = getSelectedValues(
+        params,
+        SUB_CATEGORY_PARAM,
+      ).filter((item) => allowedSubCategories.includes(item));
 
       params.delete(SUB_CATEGORY_PARAM);
-      nextSubCategories.forEach((item) => params.append(SUB_CATEGORY_PARAM, item));
+      nextSubCategories.forEach((item) =>
+        params.append(SUB_CATEGORY_PARAM, item),
+      );
 
       const allowedSubSubCategories = filters.subSubCategories
         .filter(
-          (subSubCategory) =>
-            subSubCategory.parentId &&
-            nextSubCategories.includes(subSubCategory.parentId),
+          (sub) =>
+            sub.parentId && nextSubCategories.includes(sub.parentId),
         )
-        .map((subSubCategory) => subSubCategory.id)
+        .map((sub) => sub.id)
         .filter(Boolean) as string[];
 
       const nextSubSubCategories = getSelectedValues(
@@ -486,10 +510,9 @@ const ProductsPageDetails = () => {
     if (paramKey === SUB_CATEGORY_PARAM) {
       const allowedSubSubCategories = filters.subSubCategories
         .filter(
-          (subSubCategory) =>
-            subSubCategory.parentId && nextValues.includes(subSubCategory.parentId),
+          (sub) => sub.parentId && nextValues.includes(sub.parentId),
         )
-        .map((subSubCategory) => subSubCategory.id)
+        .map((sub) => sub.id)
         .filter(Boolean) as string[];
 
       const nextSubSubCategories = getSelectedValues(
@@ -509,6 +532,16 @@ const ProductsPageDetails = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f6f2ea] text-stone-900">
+      {isSpecialSession && (
+        <div className="bg-stone-900 px-6 py-2.5 text-center text-xs font-medium uppercase tracking-widest text-white/70">
+          Special session active —{" "}
+          <span className="text-white">
+            {specialUser?.allowedCategories.length} categories
+          </span>{" "}
+          in your catalog
+        </div>
+      )}
+
       <main className="flex-1 pb-16 pt-4">
         <section className="mt-8 px-4 sm:px-6 lg:px-10">
           <div className="mx-auto max-w-7xl">
@@ -525,8 +558,9 @@ const ProductsPageDetails = () => {
                     Refined selection
                   </h2>
                   <p className="mt-4 text-sm leading-6 text-stone-600">
-                    Select one or more categories first. Sub-categories and sub-sub-categories
-                    only appear after their parent selections are made.
+                    Select one or more categories first. Sub-categories and
+                    sub-sub-categories only appear after their parent selections
+                    are made.
                   </p>
                 </div>
 
@@ -563,7 +597,9 @@ const ProductsPageDetails = () => {
                     key={group.key}
                     title={formatFilterLabel(group.label)}
                     paramKey={group.key}
-                    activeValues={selectedSpecificationFilters[group.key] ?? []}
+                    activeValues={
+                      selectedSpecificationFilters[group.key] ?? []
+                    }
                     options={group.values}
                     onToggle={toggleFilter}
                   />
@@ -580,8 +616,8 @@ const ProductsPageDetails = () => {
                     Need help sourcing?
                   </p>
                   <p className="mt-3 text-sm leading-6 text-white/70">
-                    Start with the live catalog filters, then reach out for custom
-                    sourcing and bulk requirements.
+                    Start with the live catalog filters, then reach out for
+                    custom sourcing and bulk requirements.
                   </p>
                   <button
                     type="button"
@@ -610,8 +646,11 @@ const ProductsPageDetails = () => {
                     <span className="font-semibold text-stone-900">
                       {filteredProducts.length}
                     </span>
-                    {products.length !== filteredProducts.length && (
-                      <span className="text-stone-400"> of {products.length}</span>
+                    {scopedProducts.length !== filteredProducts.length && (
+                      <span className="text-stone-400">
+                        {" "}
+                        of {scopedProducts.length}
+                      </span>
                     )}{" "}
                     {filteredProducts.length === 1 ? "product" : "products"}
                     {hasActiveFilters && (
@@ -643,7 +682,10 @@ const ProductsPageDetails = () => {
                         href={getProductHref(product)}
                         details={{
                           sku: product.sku,
-                          composition: getProductSpecification(product, "composition"),
+                          composition: getProductSpecification(
+                            product,
+                            "composition",
+                          ),
                           color: getProductDisplayColor(product),
                           width: getProductSpecification(product, "width"),
                           weight: getProductSpecification(product, "weight"),

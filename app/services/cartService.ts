@@ -27,30 +27,28 @@ type CartMutationResponse = {
   message?: string;
 };
 
-export const getCartItems = async (userId: string) =>
-  fetchApi<CartResponse>(`/cart/${userId}`, {
+export const getCartItems = async () =>
+  fetchApi<CartResponse>("/cart/me", {
     cache: "no-store",
-    onUnauthorizedRedirectTo: null,
+    onUnauthorizedRedirectTo: "/login",
   });
 
 export const addCartItem = async (payload: {
-  userId: string;
   productId: string;
   variantId?: string | null;
 }) =>
   fetchApi<CartMutationResponse>("/cart/add", {
     method: "POST",
     body: JSON.stringify(payload),
-    onUnauthorizedRedirectTo: null,
+    onUnauthorizedRedirectTo: "/login",
   });
 
 export const removeCartItem = async (payload: {
-  userId: string;
   productId: string;
   variantId?: string | null;
 }) =>
   fetchApi<CartMutationResponse>("/cart/remove", {
     method: "DELETE",
     body: JSON.stringify(payload),
-    onUnauthorizedRedirectTo: null,
+    onUnauthorizedRedirectTo: "/login",
   });
