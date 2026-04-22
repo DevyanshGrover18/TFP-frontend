@@ -49,8 +49,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {badge && (
           <span
-            className="absolute left-3 top-3 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-            style={{ backgroundColor: "#e8e4db", color: "#6b6358" }}
+            className="absolute -left-10 top-6 bg-red-500 text-white w-40 -rotate-45 text-center px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide"
           >
             {badge}
           </span>

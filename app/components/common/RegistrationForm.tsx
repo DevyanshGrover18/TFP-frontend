@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { createOrder } from "@/app/services/orderService";
+import { createOrder, sendOrderSuccessMail } from "@/app/services/orderService";
 import {
   getCurrentUserProfile,
   updateCurrentUserProfile,
@@ -169,7 +169,10 @@ function PhoneRow({
           disabled={disabled}
         >
           {countries.map((country) => (
-            <option key={`${country.code}-${country.dialCode}`} value={country.dialCode}>
+            <option
+              key={`${country.code}-${country.dialCode}`}
+              value={country.dialCode}
+            >
               {country.flag} {country.dialCode}
             </option>
           ))}
@@ -205,7 +208,9 @@ export default function RegistrationForm() {
       .then((res) => res.json())
       .then((data: Country[]) => {
         const parsed: CountryOption[] = data
-          .filter((country) => country.idd?.root && country.idd?.suffixes?.length)
+          .filter(
+            (country) => country.idd?.root && country.idd?.suffixes?.length,
+          )
           .map((country) => ({
             name: country.name.common,
             code: country.cca2,
@@ -282,7 +287,9 @@ export default function RegistrationForm() {
         }
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Unable to load your profile.",
+          error instanceof Error
+            ? error.message
+            : "Unable to load your profile.",
         );
       } finally {
         setIsLoadingProfile(false);
@@ -314,10 +321,12 @@ export default function RegistrationForm() {
     const nextErrors: Record<string, string> = {};
 
     if (currentStep === 0) {
-      if (!form.invoice.companyName.trim()) nextErrors.companyName = "Company name is required";
+      if (!form.invoice.companyName.trim())
+        nextErrors.companyName = "Company name is required";
       if (!form.invoice.street.trim()) nextErrors.street = "Street is required";
       if (!form.invoice.city.trim()) nextErrors.city = "City is required";
-      if (!form.invoice.zip.trim()) nextErrors.zip = "Zip / postal code is required";
+      if (!form.invoice.zip.trim())
+        nextErrors.zip = "Zip / postal code is required";
       if (!form.invoice.country) nextErrors.country = "Country is required";
       if (!form.invoice.notLiableForVat && !form.invoice.vatNumber.trim()) {
         nextErrors.vatNumber = "VAT number is required";
@@ -329,20 +338,27 @@ export default function RegistrationForm() {
       if (!form.shipping.companyName.trim()) {
         nextErrors.shippingCompanyName = "Company name is required";
       }
-      if (!form.shipping.street.trim()) nextErrors.shippingStreet = "Street is required";
-      if (!form.shipping.city.trim()) nextErrors.shippingCity = "City is required";
-      if (!form.shipping.zip.trim()) nextErrors.shippingZip = "Zip / postal code is required";
-      if (!form.shipping.country) nextErrors.shippingCountry = "Country is required";
+      if (!form.shipping.street.trim())
+        nextErrors.shippingStreet = "Street is required";
+      if (!form.shipping.city.trim())
+        nextErrors.shippingCity = "City is required";
+      if (!form.shipping.zip.trim())
+        nextErrors.shippingZip = "Zip / postal code is required";
+      if (!form.shipping.country)
+        nextErrors.shippingCountry = "Country is required";
     }
 
     if (currentStep === 2) {
-      if (!form.details.firstName.trim()) nextErrors.firstName = "First name is required";
-      if (!form.details.lastName.trim()) nextErrors.lastName = "Last name is required";
+      if (!form.details.firstName.trim())
+        nextErrors.firstName = "First name is required";
+      if (!form.details.lastName.trim())
+        nextErrors.lastName = "Last name is required";
       if (!form.details.email.trim()) nextErrors.email = "Email is required";
       else if (!/\S+@\S+\.\S+/.test(form.details.email)) {
         nextErrors.email = "Invalid email address";
       }
-      if (!form.details.mobile.trim()) nextErrors.mobile = "Mobile number is required";
+      if (!form.details.mobile.trim())
+        nextErrors.mobile = "Mobile number is required";
       if (!form.details.acceptTerms) {
         nextErrors.acceptTerms = "You must accept the terms and conditions";
       }
@@ -388,11 +404,18 @@ export default function RegistrationForm() {
       }
 
       const orderResponse = await createOrder();
+      if (orderResponse.success) {
+        await sendOrderSuccessMail(
+          response.user?.name,
+          response.user?.email,
+          orderResponse.order?._id,
+        );
+      }
       setSubmitted(true);
       toast.success(
         orderResponse.message ??
           response.message ??
-          "Quote request created successfully",
+          "Quote request created successfully. Please check you mail for confirmation",
       );
     } catch (error) {
       toast.error(
@@ -407,14 +430,24 @@ export default function RegistrationForm() {
     return (
       <div className="flex flex-col items-center justify-center space-y-3 rounded-3xl border border-gray-200 bg-white p-12 text-center shadow-sm">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
-          <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <svg
+            className="h-6 w-6 text-emerald-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Request saved</h2>
         <p className="max-w-sm text-sm text-gray-500">
-          Your quote details have been saved. The next time you proceed to quote,
-          this form will be pre-filled.
+          Your quote details have been saved. The next time you proceed to
+          quote, this form will be pre-filled.
         </p>
       </div>
     );
@@ -453,10 +486,14 @@ export default function RegistrationForm() {
           {step === 0 && (
             <>
               <label className={labelClass}>
-                <span>Company name <span className="text-red-500">*</span></span>
+                <span>
+                  Company name <span className="text-red-500">*</span>
+                </span>
                 <input
                   value={form.invoice.companyName}
-                  onChange={(event) => setInvoice({ companyName: event.target.value })}
+                  onChange={(event) =>
+                    setInvoice({ companyName: event.target.value })
+                  }
                   type="text"
                   disabled={isLoadingProfile}
                   className={`${inputClass} ${errors.companyName ? "border-red-400" : ""}`}
@@ -471,7 +508,9 @@ export default function RegistrationForm() {
                 <div className="flex gap-2">
                   <input
                     value={form.invoice.street}
-                    onChange={(event) => setInvoice({ street: event.target.value })}
+                    onChange={(event) =>
+                      setInvoice({ street: event.target.value })
+                    }
                     placeholder="Street"
                     disabled={isLoadingProfile}
                     className={`flex-1 rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-red-400 ${
@@ -489,7 +528,9 @@ export default function RegistrationForm() {
                 <FieldError message={errors.street} />
                 <input
                   value={form.invoice.apartment}
-                  onChange={(event) => setInvoice({ apartment: event.target.value })}
+                  onChange={(event) =>
+                    setInvoice({ apartment: event.target.value })
+                  }
                   placeholder="Apartment, suite, floor, etc. (optional)"
                   disabled={isLoadingProfile}
                   className={inputClass}
@@ -497,7 +538,9 @@ export default function RegistrationForm() {
               </div>
 
               <label className={labelClass}>
-                <span>City <span className="text-red-500">*</span></span>
+                <span>
+                  City <span className="text-red-500">*</span>
+                </span>
                 <input
                   value={form.invoice.city}
                   onChange={(event) => setInvoice({ city: event.target.value })}
@@ -509,7 +552,9 @@ export default function RegistrationForm() {
               </label>
 
               <label className={labelClass}>
-                <span>Zip / postal code <span className="text-red-500">*</span></span>
+                <span>
+                  Zip / postal code <span className="text-red-500">*</span>
+                </span>
                 <input
                   value={form.invoice.zip}
                   onChange={(event) => setInvoice({ zip: event.target.value })}
@@ -544,22 +589,29 @@ export default function RegistrationForm() {
                     disabled={isLoadingProfile}
                     className="h-4 w-4 rounded accent-red-600"
                   />
-                  <span className="text-sm text-gray-700">I am not liable for VAT</span>
+                  <span className="text-sm text-gray-700">
+                    I am not liable for VAT
+                  </span>
                 </label>
 
                 {!form.invoice.notLiableForVat && (
                   <label className={labelClass}>
-                    <span>VAT nr. (starting with your country code) <span className="text-red-500">*</span></span>
+                    <span>
+                      VAT nr. (starting with your country code){" "}
+                      <span className="text-red-500">*</span>
+                    </span>
                     <input
                       value={form.invoice.vatNumber}
-                      onChange={(event) => setInvoice({ vatNumber: event.target.value })}
+                      onChange={(event) =>
+                        setInvoice({ vatNumber: event.target.value })
+                      }
                       type="text"
                       disabled={isLoadingProfile}
                       className={`${inputClass} ${errors.vatNumber ? "border-red-400" : ""}`}
                     />
                     <p className="text-xs text-gray-400">
-                      Please start with your country code immediately followed by
-                      the rest of your VAT number.
+                      Please start with your country code immediately followed
+                      by the rest of your VAT number.
                     </p>
                     <FieldError message={errors.vatNumber} />
                   </label>
@@ -580,10 +632,14 @@ export default function RegistrationForm() {
               </div>
 
               <label className={labelClass}>
-                <span>Category <span className="text-red-500">*</span></span>
+                <span>
+                  Category <span className="text-red-500">*</span>
+                </span>
                 <select
                   value={form.invoice.category}
-                  onChange={(event) => setInvoice({ category: event.target.value })}
+                  onChange={(event) =>
+                    setInvoice({ category: event.target.value })
+                  }
                   disabled={isLoadingProfile}
                   className={`${selectClass} ${errors.category ? "border-red-400" : ""}`}
                 >
@@ -601,7 +657,9 @@ export default function RegistrationForm() {
                 <span>Website</span>
                 <input
                   value={form.invoice.website}
-                  onChange={(event) => setInvoice({ website: event.target.value })}
+                  onChange={(event) =>
+                    setInvoice({ website: event.target.value })
+                  }
                   type="url"
                   placeholder="https://"
                   disabled={isLoadingProfile}
@@ -623,7 +681,9 @@ export default function RegistrationForm() {
                     disabled={isLoadingProfile}
                     className="h-4 w-4 accent-red-600"
                   />
-                  <span className="text-sm text-gray-700">Same as invoice address</span>
+                  <span className="text-sm text-gray-700">
+                    Same as invoice address
+                  </span>
                 </label>
                 <label className="flex cursor-pointer items-center gap-3">
                   <input
@@ -634,14 +694,18 @@ export default function RegistrationForm() {
                     disabled={isLoadingProfile}
                     className="h-4 w-4 accent-red-600"
                   />
-                  <span className="text-sm text-gray-700">Enter delivery address</span>
+                  <span className="text-sm text-gray-700">
+                    Enter delivery address
+                  </span>
                 </label>
               </div>
 
               {!form.shipping.sameAsInvoice && (
                 <>
                   <label className={labelClass}>
-                    <span>Company name <span className="text-red-500">*</span></span>
+                    <span>
+                      Company name <span className="text-red-500">*</span>
+                    </span>
                     <input
                       value={form.shipping.companyName}
                       onChange={(event) =>
@@ -663,7 +727,9 @@ export default function RegistrationForm() {
                     <div className="flex gap-2">
                       <input
                         value={form.shipping.street}
-                        onChange={(event) => setShipping({ street: event.target.value })}
+                        onChange={(event) =>
+                          setShipping({ street: event.target.value })
+                        }
                         placeholder="Street"
                         disabled={isLoadingProfile}
                         className={`flex-1 rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-red-400 ${
@@ -672,7 +738,9 @@ export default function RegistrationForm() {
                       />
                       <input
                         value={form.shipping.nr}
-                        onChange={(event) => setShipping({ nr: event.target.value })}
+                        onChange={(event) =>
+                          setShipping({ nr: event.target.value })
+                        }
                         placeholder="Nr."
                         disabled={isLoadingProfile}
                         className="w-20 rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-red-400"
@@ -691,10 +759,14 @@ export default function RegistrationForm() {
                   </div>
 
                   <label className={labelClass}>
-                    <span>City <span className="text-red-500">*</span></span>
+                    <span>
+                      City <span className="text-red-500">*</span>
+                    </span>
                     <input
                       value={form.shipping.city}
-                      onChange={(event) => setShipping({ city: event.target.value })}
+                      onChange={(event) =>
+                        setShipping({ city: event.target.value })
+                      }
                       type="text"
                       disabled={isLoadingProfile}
                       className={`${inputClass} ${
@@ -705,10 +777,14 @@ export default function RegistrationForm() {
                   </label>
 
                   <label className={labelClass}>
-                    <span>Zip / postal code <span className="text-red-500">*</span></span>
+                    <span>
+                      Zip / postal code <span className="text-red-500">*</span>
+                    </span>
                     <input
                       value={form.shipping.zip}
-                      onChange={(event) => setShipping({ zip: event.target.value })}
+                      onChange={(event) =>
+                        setShipping({ zip: event.target.value })
+                      }
                       type="text"
                       disabled={isLoadingProfile}
                       className={`${inputClass} ${
@@ -745,7 +821,9 @@ export default function RegistrationForm() {
                   <div className="flex-1 space-y-1">
                     <input
                       value={form.details.firstName}
-                      onChange={(event) => setDetails({ firstName: event.target.value })}
+                      onChange={(event) =>
+                        setDetails({ firstName: event.target.value })
+                      }
                       placeholder="First name"
                       disabled={isLoadingProfile}
                       className={`${inputClass} ${errors.firstName ? "border-red-400" : ""}`}
@@ -755,7 +833,9 @@ export default function RegistrationForm() {
                   <div className="flex-1 space-y-1">
                     <input
                       value={form.details.lastName}
-                      onChange={(event) => setDetails({ lastName: event.target.value })}
+                      onChange={(event) =>
+                        setDetails({ lastName: event.target.value })
+                      }
                       placeholder="Last name"
                       disabled={isLoadingProfile}
                       className={`${inputClass} ${errors.lastName ? "border-red-400" : ""}`}
@@ -766,10 +846,14 @@ export default function RegistrationForm() {
               </div>
 
               <label className={labelClass}>
-                <span>E-mail address <span className="text-red-500">*</span></span>
+                <span>
+                  E-mail address <span className="text-red-500">*</span>
+                </span>
                 <input
                   value={form.details.email}
-                  onChange={(event) => setDetails({ email: event.target.value })}
+                  onChange={(event) =>
+                    setDetails({ email: event.target.value })
+                  }
                   type="email"
                   disabled={isLoadingProfile}
                   className={`${inputClass} ${errors.email ? "border-red-400" : ""}`}
@@ -781,7 +865,9 @@ export default function RegistrationForm() {
                 <span>E-mail address invoice</span>
                 <input
                   value={form.details.emailInvoice}
-                  onChange={(event) => setDetails({ emailInvoice: event.target.value })}
+                  onChange={(event) =>
+                    setDetails({ emailInvoice: event.target.value })
+                  }
                   type="email"
                   disabled={isLoadingProfile}
                   className={inputClass}
@@ -826,7 +912,8 @@ export default function RegistrationForm() {
                     className="mt-0.5 h-4 w-4 rounded accent-red-600"
                   />
                   <span className="text-sm text-gray-700">
-                    I would like to be updated about the latest developments and trends.
+                    I would like to be updated about the latest developments and
+                    trends.
                   </span>
                 </label>
 
@@ -844,7 +931,10 @@ export default function RegistrationForm() {
                   />
                   <span className="text-sm text-gray-700">
                     <span className="font-semibold">Yes</span>, I accept the{" "}
-                    <a href="/terms" className="text-gray-900 underline hover:text-red-600">
+                    <a
+                      href="/terms"
+                      className="text-gray-900 underline hover:text-red-600"
+                    >
                       Terms and conditions
                     </a>
                     .

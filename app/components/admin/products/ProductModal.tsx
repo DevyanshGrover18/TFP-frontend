@@ -40,6 +40,7 @@ export type ProductFormValues = {
     gallery: string[];
   };
   variants: ProductVariant[];
+  isNew: boolean;
 };
 
 type ProductModalProps = {
@@ -82,6 +83,7 @@ const emptyValues: ProductFormValues = {
     gallery: [],
   },
   variants: [],
+  isNew: false,
 };
 
 function cloneInitialValues(
@@ -90,6 +92,7 @@ function cloneInitialValues(
   return {
     ...emptyValues,
     ...initialValues,
+    isNew: initialValues?.isNew ?? false,
     specifications:
       initialValues?.specifications?.map((item) => ({ ...item })) ?? [],
     media: {
@@ -499,6 +502,7 @@ const ProductModal = ({
           .filter(Boolean),
       },
       variants: trimmedVariants,
+      isNew: values.isNew,
     };
 
     if (
@@ -628,6 +632,35 @@ const ProductModal = ({
         </select>
       </label>
 
+      <div className="space-y-2 text-sm font-medium text-gray-700 md:col-span-2">
+        <span>Availability</span>
+        <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-gray-200 px-4 py-3 transition hover:bg-gray-50">
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              Mark as new arrival
+            </p>
+            <p className="text-xs text-gray-400">
+              Displays a "New" badge on this product in the catalog.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={values.isNew}
+            onClick={() => updateField("isNew", !values.isNew)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+              values.isNew ? "bg-red-600" : "bg-gray-200"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                values.isNew ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </label>
+      </div>
+
       <label className="space-y-2 text-sm font-medium text-gray-700 md:col-span-2">
         <span>Description</span>
         <textarea
@@ -662,7 +695,10 @@ const ProductModal = ({
 
       {values.variants.length ? (
         values.variants.map((variant, index) => (
-          <div key={variant.id} className="rounded-3xl border border-gray-200 p-4">
+          <div
+            key={variant.id}
+            className="rounded-3xl border border-gray-200 p-4"
+          >
             <div className="mb-4 flex items-center justify-between">
               <p className="text-sm font-semibold text-gray-900">
                 Variant {index + 1}

@@ -5,6 +5,13 @@ import { useEffect, useState } from "react";
 import OrderModal from "@/app/components/admin/orders/OrderModal";
 import { getAllOrders, type OrderRecord } from "@/app/services/orderService";
 
+const statusStyles: Record<string, string> = {
+  Pending: "bg-amber-100 text-amber-700",
+  Processing: "bg-blue-100 text-blue-700",
+  Completed: "bg-green-100 text-green-700",
+  Cancelled: "bg-red-100 text-red-700",
+};
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
@@ -37,6 +44,15 @@ export default function OrdersPage() {
 
     void loadOrders();
   }, []);
+
+  function handleStatusUpdate(orderId: string, newStatus: OrderRecord["status"]) {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+    );
+    setSelectedOrder((prev) =>
+      prev?.id === orderId ? { ...prev, status: newStatus } : prev,
+    );
+  }
 
   return (
     <section className="space-y-6">
@@ -100,7 +116,9 @@ export default function OrdersPage() {
                     </td>
                     <td className="px-5 py-4 text-gray-600">{order.itemCount}</td>
                     <td className="px-5 py-4">
-                      <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[order.status] ?? "bg-gray-100 text-gray-600"}`}
+                      >
                         {order.status}
                       </span>
                     </td>
@@ -131,6 +149,7 @@ export default function OrdersPage() {
         isOpen={selectedOrder !== null}
         order={selectedOrder}
         onClose={() => setSelectedOrder(null)}
+        onStatusUpdate={handleStatusUpdate}
       />
     </section>
   );

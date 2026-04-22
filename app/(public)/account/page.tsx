@@ -151,7 +151,10 @@ export default function AccountPage() {
     [profile.details.firstName, profile.details.lastName],
   );
 
-  const setInvoice = (field: keyof UserQuoteProfile["invoice"], value: string | boolean) => {
+  const setInvoice = (
+    field: keyof UserQuoteProfile["invoice"],
+    value: string | boolean,
+  ) => {
     setProfile((current) => ({
       ...current,
       invoice: {
@@ -208,7 +211,9 @@ export default function AccountPage() {
       toast.success(response.message ?? "Account updated");
     } catch (saveError) {
       const message =
-        saveError instanceof Error ? saveError.message : "Failed to update account.";
+        saveError instanceof Error
+          ? saveError.message
+          : "Failed to update account.";
       setError(message);
       toast.error(message);
     } finally {
@@ -243,7 +248,8 @@ export default function AccountPage() {
             Account
           </h1>
           <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-[#47464c]">
-            Sign in to view your saved details, quote requests, and account activity.
+            Sign in to view your saved details, quote requests, and account
+            activity.
           </p>
           <Link
             href="/login"
@@ -268,8 +274,8 @@ export default function AccountPage() {
               Account
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#47464c]">
-              Review your saved quote details, update your business information, and
-              track the status of submitted requests.
+              Review your saved quote details, update your business information,
+              and track the status of submitted requests.
             </p>
           </div>
 
@@ -310,7 +316,9 @@ export default function AccountPage() {
               </div>
 
               {isLoading ? (
-                <p className="pt-6 text-sm text-[#47464c]">Loading your account...</p>
+                <p className="pt-6 text-sm text-[#47464c]">
+                  Loading your account...
+                </p>
               ) : (
                 <div className="mt-6 space-y-8">
                   <div className="grid gap-4 md:grid-cols-2">
@@ -318,7 +326,9 @@ export default function AccountPage() {
                       <span>First name</span>
                       <input
                         value={profile.details.firstName}
-                        onChange={(event) => setDetails("firstName", event.target.value)}
+                        onChange={(event) =>
+                          setDetails("firstName", event.target.value)
+                        }
                         className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                       />
                     </label>
@@ -326,7 +336,9 @@ export default function AccountPage() {
                       <span>Last name</span>
                       <input
                         value={profile.details.lastName}
-                        onChange={(event) => setDetails("lastName", event.target.value)}
+                        onChange={(event) =>
+                          setDetails("lastName", event.target.value)
+                        }
                         className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                       />
                     </label>
@@ -335,7 +347,9 @@ export default function AccountPage() {
                       <input
                         type="email"
                         value={profile.details.email}
-                        onChange={(event) => setDetails("email", event.target.value)}
+                        onChange={(event) =>
+                          setDetails("email", event.target.value)
+                        }
                         className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                       />
                     </label>
@@ -344,7 +358,9 @@ export default function AccountPage() {
                       <input
                         type="email"
                         value={profile.details.emailInvoice}
-                        onChange={(event) => setDetails("emailInvoice", event.target.value)}
+                        onChange={(event) =>
+                          setDetails("emailInvoice", event.target.value)
+                        }
                         className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                       />
                     </label>
@@ -352,7 +368,9 @@ export default function AccountPage() {
                       <span>Mobile code</span>
                       <input
                         value={profile.details.mobileCode}
-                        onChange={(event) => setDetails("mobileCode", event.target.value)}
+                        onChange={(event) =>
+                          setDetails("mobileCode", event.target.value)
+                        }
                         className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                       />
                     </label>
@@ -360,7 +378,9 @@ export default function AccountPage() {
                       <span>Mobile number</span>
                       <input
                         value={profile.details.mobile}
-                        onChange={(event) => setDetails("mobile", event.target.value)}
+                        onChange={(event) =>
+                          setDetails("mobile", event.target.value)
+                        }
                         className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                       />
                     </label>
@@ -375,7 +395,9 @@ export default function AccountPage() {
                         <span>Company name</span>
                         <input
                           value={profile.invoice.companyName}
-                          onChange={(event) => setInvoice("companyName", event.target.value)}
+                          onChange={(event) =>
+                            setInvoice("companyName", event.target.value)
+                          }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />
                       </label>
@@ -383,7 +405,9 @@ export default function AccountPage() {
                         <span>Category</span>
                         <input
                           value={profile.invoice.category}
-                          onChange={(event) => setInvoice("category", event.target.value)}
+                          onChange={(event) =>
+                            setInvoice("category", event.target.value)
+                          }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />
                       </label>
@@ -391,7 +415,9 @@ export default function AccountPage() {
                         <span>Website</span>
                         <input
                           value={profile.invoice.website}
-                          onChange={(event) => setInvoice("website", event.target.value)}
+                          onChange={(event) =>
+                            setInvoice("website", event.target.value)
+                          }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />
                       </label>
@@ -399,7 +425,9 @@ export default function AccountPage() {
                         <span>VAT number</span>
                         <input
                           value={profile.invoice.vatNumber}
-                          onChange={(event) => setInvoice("vatNumber", event.target.value)}
+                          onChange={(event) =>
+                            setInvoice("vatNumber", event.target.value)
+                          }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />
                       </label>
@@ -415,7 +443,9 @@ export default function AccountPage() {
                         <span>Street</span>
                         <input
                           value={profile.invoice.street}
-                          onChange={(event) => setInvoice("street", event.target.value)}
+                          onChange={(event) =>
+                            setInvoice("street", event.target.value)
+                          }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />
                       </label>
@@ -423,7 +453,9 @@ export default function AccountPage() {
                         <span>Number</span>
                         <input
                           value={profile.invoice.nr}
-                          onChange={(event) => setInvoice("nr", event.target.value)}
+                          onChange={(event) =>
+                            setInvoice("nr", event.target.value)
+                          }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />
                       </label>
@@ -431,7 +463,9 @@ export default function AccountPage() {
                         <span>City</span>
                         <input
                           value={profile.invoice.city}
-                          onChange={(event) => setInvoice("city", event.target.value)}
+                          onChange={(event) =>
+                            setInvoice("city", event.target.value)
+                          }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />
                       </label>
@@ -439,7 +473,9 @@ export default function AccountPage() {
                         <span>ZIP</span>
                         <input
                           value={profile.invoice.zip}
-                          onChange={(event) => setInvoice("zip", event.target.value)}
+                          onChange={(event) =>
+                            setInvoice("zip", event.target.value)
+                          }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />
                       </label>
@@ -447,7 +483,9 @@ export default function AccountPage() {
                         <span>Country</span>
                         <input
                           value={profile.invoice.country}
-                          onChange={(event) => setInvoice("country", event.target.value)}
+                          onChange={(event) =>
+                            setInvoice("country", event.target.value)
+                          }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />
                       </label>
@@ -488,7 +526,9 @@ export default function AccountPage() {
                           <span>Street</span>
                           <input
                             value={profile.shipping.street}
-                            onChange={(event) => setShipping("street", event.target.value)}
+                            onChange={(event) =>
+                              setShipping("street", event.target.value)
+                            }
                             className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                           />
                         </label>
@@ -496,7 +536,9 @@ export default function AccountPage() {
                           <span>City</span>
                           <input
                             value={profile.shipping.city}
-                            onChange={(event) => setShipping("city", event.target.value)}
+                            onChange={(event) =>
+                              setShipping("city", event.target.value)
+                            }
                             className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                           />
                         </label>
@@ -504,7 +546,9 @@ export default function AccountPage() {
                           <span>Country</span>
                           <input
                             value={profile.shipping.country}
-                            onChange={(event) => setShipping("country", event.target.value)}
+                            onChange={(event) =>
+                              setShipping("country", event.target.value)
+                            }
                             className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                           />
                         </label>
@@ -548,9 +592,10 @@ export default function AccountPage() {
                   <p className="text-sm text-[#47464c]">Loading orders...</p>
                 ) : orders.length > 0 ? (
                   orders.map((order) => (
-                    <article
+                    <Link
                       key={order.id}
-                      className="rounded-2xl border border-[#ece7de] p-4"
+                      href={`/order/${order.id}`}
+                      className="block rounded-2xl border border-[#ece7de] p-4 transition hover:border-[#c8c0b6] hover:shadow-[0_4px_16px_rgba(26,28,25,0.06)]"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -558,7 +603,8 @@ export default function AccountPage() {
                             {order.orderNumber}
                           </p>
                           <p className="mt-1 text-sm text-[#6b6a70]">
-                            {formatDate(order.createdAt)} · {order.itemCount} items
+                            {formatDate(order.createdAt)} · {order.itemCount}{" "}
+                            items
                           </p>
                         </div>
                         <span
@@ -567,11 +613,12 @@ export default function AccountPage() {
                           {order.status}
                         </span>
                       </div>
-                    </article>
+                    </Link>
                   ))
                 ) : (
                   <div className="rounded-2xl border border-dashed border-[#ddd6cc] p-6 text-sm text-[#6b6a70]">
-                    No quote requests yet. Add fabrics to your cart and proceed to quote.
+                    No quote requests yet. Add fabrics to your cart and proceed
+                    to quote.
                   </div>
                 )}
               </div>

@@ -19,6 +19,7 @@ export type OrderItemRecord = {
 };
 
 export type OrderRecord = {
+  _id: string;
   id: string;
   orderNumber: string;
   status: "Pending" | "Processing" | "Completed" | "Cancelled";
@@ -34,10 +35,13 @@ export type OrderRecord = {
 };
 
 export const createOrder = async () => {
-  return fetchApi<{ order?: OrderRecord; message?: string }>("/orders", {
-    method: "POST",
-    onUnauthorizedRedirectTo: "/login",
-  });
+  return fetchApi<{ order?: OrderRecord; message?: string; success: boolean }>(
+    "/orders",
+    {
+      method: "POST",
+      onUnauthorizedRedirectTo: "/login",
+    },
+  );
 };
 
 export const getAllOrders = async () => {
@@ -56,5 +60,34 @@ export const getMyOrders = async () => {
 export const getOrderById = async (id: string) => {
   return fetchApi<{ order?: OrderRecord; message?: string }>(`/orders/${id}`, {
     cache: "no-store",
+  });
+};
+
+export const sendOrderSuccessMail = async (
+  name?: string,
+  email?: string,
+  orderId?: string,
+) => {
+  return fetchApi<{ success?: boolean; message?: string }>(
+    "/orders/send-mail",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name, email, orderId }),
+      credentials: "include",
+    },
+  );
+};
+
+export const updateOrderStatus = async (id: string, status: string) => {
+  return fetchApi<{ success?: string; message?: string }>(`/orders/${id}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+    credentials: "include",
   });
 };

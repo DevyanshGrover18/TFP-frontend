@@ -44,7 +44,9 @@ const SUB_CATEGORY_PARAM = "subcategory";
 const SUB_SUB_CATEGORY_PARAM = "subsubcategory";
 
 const formatFilterLabel = (value: string) =>
-  value.replace(/[-_]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  value
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 const getSelectedValues = (searchParams: URLSearchParams, key: string) =>
   Array.from(new Set(searchParams.getAll(key).filter(Boolean)));
@@ -108,7 +110,9 @@ function SidebarFilterSection({
                 />
                 <span>{option.label}</span>
               </span>
-              <span className={`${isActive ? "text-white/70" : "text-stone-400"}`}>
+              <span
+                className={`${isActive ? "text-white/70" : "text-stone-400"}`}
+              >
                 {option.count}
               </span>
             </button>
@@ -196,7 +200,9 @@ const ProductsPageDetails = () => {
     return products.filter((product) => {
       const catId = getProductRefId(product.categoryId as ProductRef);
       const subCatId = getProductRefId(product.subCategoryId as ProductRef);
-      const subSubCatId = getProductRefId(product.subSubCategoryId as ProductRef);
+      const subSubCatId = getProductRefId(
+        product.subSubCategoryId as ProductRef,
+      );
 
       return (
         (catId && allowedCategoryIds.has(catId)) ||
@@ -227,7 +233,9 @@ const ProductsPageDetails = () => {
     );
 
     return {
-      categories: filters.categories.filter((c) => c.id && scopedCatIds.has(c.id)),
+      categories: filters.categories.filter(
+        (c) => c.id && scopedCatIds.has(c.id),
+      ),
       subCategories: filters.subCategories.filter(
         (c) => c.id && scopedSubCatIds.has(c.id),
       ),
@@ -275,8 +283,12 @@ const ProductsPageDetails = () => {
     ({ ignoreParamKey }: { ignoreParamKey?: string }) =>
       scopedProducts.filter((product) => {
         const categoryId = getProductRefId(product.categoryId as ProductRef);
-        const subCategoryId = getProductRefId(product.subCategoryId as ProductRef);
-        const subSubCategoryId = getProductRefId(product.subSubCategoryId as ProductRef);
+        const subCategoryId = getProductRefId(
+          product.subCategoryId as ProductRef,
+        );
+        const subSubCategoryId = getProductRefId(
+          product.subSubCategoryId as ProductRef,
+        );
 
         if (
           ignoreParamKey !== CATEGORY_PARAM &&
@@ -323,14 +335,26 @@ const ProductsPageDetails = () => {
     () =>
       scopedProducts.filter((product) => {
         const categoryId = getProductRefId(product.categoryId as ProductRef);
-        const subCategoryId = getProductRefId(product.subCategoryId as ProductRef);
-        const subSubCategoryId = getProductRefId(product.subSubCategoryId as ProductRef);
+        const subCategoryId = getProductRefId(
+          product.subCategoryId as ProductRef,
+        );
+        const subSubCategoryId = getProductRefId(
+          product.subSubCategoryId as ProductRef,
+        );
 
-        if (!matchesMultiValueFilter(selectedCategories, categoryId)) return false;
-        if (!matchesMultiValueFilter(selectedSubCategories, subCategoryId)) return false;
-        if (!matchesMultiValueFilter(selectedSubSubCategories, subSubCategoryId)) return false;
+        if (!matchesMultiValueFilter(selectedCategories, categoryId))
+          return false;
+        if (!matchesMultiValueFilter(selectedSubCategories, subCategoryId))
+          return false;
+        if (
+          !matchesMultiValueFilter(selectedSubSubCategories, subSubCategoryId)
+        )
+          return false;
 
-        return matchesSpecificationFilters(product, selectedSpecificationFilters);
+        return matchesSpecificationFilters(
+          product,
+          selectedSpecificationFilters,
+        );
       }),
     [
       scopedProducts,
@@ -342,7 +366,9 @@ const ProductsPageDetails = () => {
   );
 
   const categoryOptions = useMemo(() => {
-    const baseProducts = getProductsForCounts({ ignoreParamKey: CATEGORY_PARAM });
+    const baseProducts = getProductsForCounts({
+      ignoreParamKey: CATEGORY_PARAM,
+    });
     return scopedFilters.categories
       .map((option) => ({
         ...option,
@@ -358,7 +384,9 @@ const ProductsPageDetails = () => {
 
   const subCategoryOptions = useMemo(() => {
     if (!selectedCategories.length) return [];
-    const baseProducts = getProductsForCounts({ ignoreParamKey: SUB_CATEGORY_PARAM });
+    const baseProducts = getProductsForCounts({
+      ignoreParamKey: SUB_CATEGORY_PARAM,
+    });
     return visibleSubCategories
       .map((option) => ({
         ...option,
@@ -386,7 +414,8 @@ const ProductsPageDetails = () => {
       .map((option) => ({
         ...option,
         count: baseProducts.filter(
-          (p) => getProductRefId(p.subSubCategoryId as ProductRef) === option.id,
+          (p) =>
+            getProductRefId(p.subSubCategoryId as ProductRef) === option.id,
         ).length,
       }))
       .filter(
@@ -436,7 +465,11 @@ const ProductsPageDetails = () => {
           };
         })
         .filter((group) => group.values.length > 0),
-    [filters.specifications, selectedSpecificationFilters, getProductsForCounts],
+    [
+      filters.specifications,
+      selectedSpecificationFilters,
+      getProductsForCounts,
+    ],
   );
 
   const activeTitle = useMemo(() => {
@@ -472,9 +505,7 @@ const ProductsPageDetails = () => {
 
     if (paramKey === CATEGORY_PARAM) {
       const allowedSubCategories = filters.subCategories
-        .filter(
-          (sub) => sub.parentId && nextValues.includes(sub.parentId),
-        )
+        .filter((sub) => sub.parentId && nextValues.includes(sub.parentId))
         .map((sub) => sub.id)
         .filter(Boolean) as string[];
 
@@ -490,8 +521,7 @@ const ProductsPageDetails = () => {
 
       const allowedSubSubCategories = filters.subSubCategories
         .filter(
-          (sub) =>
-            sub.parentId && nextSubCategories.includes(sub.parentId),
+          (sub) => sub.parentId && nextSubCategories.includes(sub.parentId),
         )
         .map((sub) => sub.id)
         .filter(Boolean) as string[];
@@ -509,9 +539,7 @@ const ProductsPageDetails = () => {
 
     if (paramKey === SUB_CATEGORY_PARAM) {
       const allowedSubSubCategories = filters.subSubCategories
-        .filter(
-          (sub) => sub.parentId && nextValues.includes(sub.parentId),
-        )
+        .filter((sub) => sub.parentId && nextValues.includes(sub.parentId))
         .map((sub) => sub.id)
         .filter(Boolean) as string[];
 
@@ -553,7 +581,9 @@ const ProductsPageDetails = () => {
                   </p>
                   <h2
                     className="mt-3 text-3xl italic text-stone-900"
-                    style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                    style={{
+                      fontFamily: "'Georgia', 'Times New Roman', serif",
+                    }}
                   >
                     Refined selection
                   </h2>
@@ -597,9 +627,7 @@ const ProductsPageDetails = () => {
                     key={group.key}
                     title={formatFilterLabel(group.label)}
                     paramKey={group.key}
-                    activeValues={
-                      selectedSpecificationFilters[group.key] ?? []
-                    }
+                    activeValues={selectedSpecificationFilters[group.key] ?? []}
                     options={group.values}
                     onToggle={toggleFilter}
                   />
@@ -611,7 +639,9 @@ const ProductsPageDetails = () => {
                   </p>
                   <p
                     className="mt-3 text-2xl italic"
-                    style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                    style={{
+                      fontFamily: "'Georgia', 'Times New Roman', serif",
+                    }}
                   >
                     Need help sourcing?
                   </p>
@@ -636,7 +666,9 @@ const ProductsPageDetails = () => {
                     </p>
                     <h2
                       className="mt-2 text-3xl italic text-stone-900"
-                      style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                      style={{
+                        fontFamily: "'Georgia', 'Times New Roman', serif",
+                      }}
                     >
                       {activeTitle}
                     </h2>
@@ -680,6 +712,7 @@ const ProductsPageDetails = () => {
                         name={product.name}
                         image={getProductPrimaryImage(product)}
                         href={getProductHref(product)}
+                        badge={product.isNew ? "New" : undefined} // ← add this
                         details={{
                           sku: product.sku,
                           composition: getProductSpecification(
@@ -697,7 +730,9 @@ const ProductsPageDetails = () => {
                   <div className="rounded-[2rem] border border-stone-200 bg-white px-6 py-14 text-center shadow-sm">
                     <p
                       className="text-3xl italic text-stone-900"
-                      style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                      style={{
+                        fontFamily: "'Georgia', 'Times New Roman', serif",
+                      }}
                     >
                       No products found
                     </p>
