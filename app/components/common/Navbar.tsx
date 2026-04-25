@@ -5,7 +5,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { Search, User, ShoppingBag, ChevronDown, Menu, X } from "lucide-react";
 import { getAllCategories } from "@/app/services/categoriesService";
 import { useRouter } from "next/navigation";
-import SpecialUserLoginModal from "../specialUsers/SpecialUserLoginModal";
 import { useAuth } from "@/app/context/AuthContext";
 
 type CategoryNode = {
@@ -74,7 +73,7 @@ const MegaMenu = ({
                     {child.children!.map((sub) => (
                       <li key={sub._id}>
                         <a
-                          href={`/products?subsubcategory=${sub.name}`}
+                          href={`/products?category=${category._id}&subcategory=${child._id}&subsubcategory=${sub._id}`}
                           onClick={onClose}
                           className="text-sm text-primary hover:text-secondary transition-colors duration-150"
                         >
@@ -254,17 +253,13 @@ const Navbar = () => {
   const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(
     null,
   );
-  const [isSpecialUserModalOpen, setIsSpecialUserModalOpen] = useState(false);
-  const [loginError, setLoginError] = useState("");
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const { isSpecialSession, specialUser, loginAsSpecialUser, logout } =
-    useAuth();
+  const { isSpecialSession, specialUser } = useAuth();
 
   // Visible categories — filtered for special session, full list otherwise
   const visibleCategories =
@@ -312,24 +307,6 @@ const Navbar = () => {
       setActiveCategory(null);
     }
   }, [visibleCategories, activeCategory]);
-
-  const handleSpecialUserLogin = async (values: {
-    email: string;
-    password: string;
-  }) => {
-    setIsLoggingIn(true);
-    setLoginError("");
-    try {
-      await loginAsSpecialUser(values.email, values.password);
-      setIsSpecialUserModalOpen(false);
-    } catch (err) {
-      setLoginError(
-        err instanceof Error ? err.message : "Login failed. Please try again.",
-      );
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
 
   const handleCategoryClick = (category: CategoryNode) => {
     const hasChildren = (category.children?.length ?? 0) > 0;
@@ -400,18 +377,15 @@ const Navbar = () => {
             {/* Special button — opens modal if not logged in, logs out if active */}
             {isSpecialSession ? (
               <button
-                onClick={() => void logout()}
-                className="text-md italic cursor-pointer font-medium text-secondary font-sans hover:text-primary transition-colors duration-150 border-b-[1.5px] border-secondary pb-0.5"
+                type="button"
+                className="text-md italic font-medium text-secondary font-sans border-b-[1.5px] border-secondary pb-0.5"
               >
-                Exit special
+                Special
               </button>
             ) : (
               <button
-                onClick={() => {
-                  setLoginError("");
-                  setIsSpecialUserModalOpen(true);
-                }}
-                className="text-md italic cursor-pointer font-medium text-primary font-sans hover:text-secondary transition-colors duration-150 border-b-[1.5px] border-transparent pb-0.5"
+                type="button"
+                className="text-md italic font-medium text-primary font-sans border-b-[1.5px] border-transparent pb-0.5"
               >
                 Special
               </button>
@@ -467,15 +441,6 @@ const Navbar = () => {
           />
         )}
       </nav>
-
-      <SpecialUserLoginModal
-        isOpen={isSpecialUserModalOpen}
-        isLoading={isLoggingIn}
-        externalError={loginError}
-        onClose={() => setIsSpecialUserModalOpen(false)}
-        onSubmit={handleSpecialUserLogin}
-      />
-
       <MobileDrawer
         categories={visibleCategories}
         isOpen={mobileOpen}

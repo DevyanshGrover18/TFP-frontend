@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@/app/context/AuthContext";
+import { isProductAllowedForCategoryIds } from "@/app/services/catalogAccess";
 import {
   getAllProducts,
   getProductDisplayColor,
@@ -9,7 +11,7 @@ import {
   type ProductRecord,
 } from "@/app/services/productsService";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ProductCard from "../common/ProductCard";
 
 const HomeSection3 = () => {
@@ -17,6 +19,7 @@ const HomeSection3 = () => {
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { isSpecialSession, specialUser } = useAuth();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -24,7 +27,7 @@ const HomeSection3 = () => {
         setLoading(true);
         setHasError(false);
         const response = await getAllProducts();
-        setProducts((response.products ?? []).slice(0, 6));
+        setProducts(response.products ?? []);
       } catch {
         setHasError(true);
       } finally {
@@ -35,17 +38,45 @@ const HomeSection3 = () => {
     void fetchProducts();
   }, []);
 
-  const hasProducts = products.length > 0;
-  const activeProduct = hasProducts ? products[currentIndex] : null;
+  const allowedCategoryIds = useMemo(
+    () =>
+      isSpecialSession && specialUser?.allowedCategories.length
+        ? new Set(specialUser.allowedCategories)
+        : null,
+    [isSpecialSession, specialUser],
+  );
+
+  const visibleProducts = useMemo(
+    () =>
+      products
+        .filter((product) =>
+          isProductAllowedForCategoryIds(product, allowedCategoryIds),
+        )
+        .slice(0, 6),
+    [products, allowedCategoryIds],
+  );
+
+  useEffect(() => {
+    if (currentIndex >= visibleProducts.length) {
+      setCurrentIndex(0);
+    }
+  }, [currentIndex, visibleProducts.length]);
+
+  const hasProducts = visibleProducts.length > 0;
+  const activeProduct = hasProducts ? visibleProducts[currentIndex] : null;
 
   const showPrev = () => {
     if (!hasProducts) return;
-    setCurrentIndex((prev) => (prev === 0 ? products.length - 1 : prev - 1));
+    setCurrentIndex((prev) =>
+      prev === 0 ? visibleProducts.length - 1 : prev - 1,
+    );
   };
 
   const showNext = () => {
     if (!hasProducts) return;
-    setCurrentIndex((prev) => (prev === products.length - 1 ? 0 : prev + 1));
+    setCurrentIndex((prev) =>
+      prev === visibleProducts.length - 1 ? 0 : prev + 1,
+    );
   };
 
   return (
@@ -95,6 +126,7 @@ const HomeSection3 = () => {
                 name={activeProduct.name}
                 image={getProductPrimaryImage(activeProduct)}
                 href={getProductHref(activeProduct)}
+                badge={activeProduct.isNew ? "New" : undefined}
                 category={activeProduct.categoryId}
                 details={{
                   sku: activeProduct.sku,
@@ -107,7 +139,7 @@ const HomeSection3 = () => {
 
               <div className="flex items-center justify-between">
                 <div className="flex gap-2">
-                  {products.map((product, index) => (
+                  {visibleProducts.map((product, index) => (
                     <button
                       key={product._id}
                       type="button"

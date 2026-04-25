@@ -1,23 +1,21 @@
 "use client";
 
 import { getAllCategories } from "@/app/services/categoriesService";
-import React, { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/app/context/AuthContext";
+import {
+  filterCategoryTreeByAllowedIds,
+  type CatalogCategoryNode,
+} from "@/app/services/catalogAccess";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import CategoryCard from "../common/CategoryCard";
-
-type CategoryNode = {
-  _id: string;
-  name: string;
-  image: string;
-  parentId: string | null;
-  level: number;
-  children?: CategoryNode[];
-};
+import Link from "next/link";
 
 const CategoryCarousel = () => {
-  const [categories, setCategories] = useState<CategoryNode[]>([]);
+  const [categories, setCategories] = useState<CatalogCategoryNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { isSpecialSession, specialUser } = useAuth();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -25,8 +23,7 @@ const CategoryCarousel = () => {
         setLoading(true);
         setHasError(false);
         const response = await getAllCategories();
-        const data = (response.categories ?? []) as CategoryNode[];
-        setCategories(data.filter((category) => category.level === 1));
+        setCategories((response.categories ?? []) as CatalogCategoryNode[]);
       } catch {
         setHasError(true);
       } finally {
@@ -36,6 +33,18 @@ const CategoryCarousel = () => {
 
     fetchCategories();
   }, []);
+
+  const visibleCategories = useMemo(() => {
+    const topLevelCategories =
+      isSpecialSession && specialUser?.allowedCategories.length
+        ? filterCategoryTreeByAllowedIds(
+            categories,
+            specialUser.allowedCategories,
+          )
+        : categories;
+
+    return topLevelCategories.filter((category) => category.level === 1);
+  }, [categories, isSpecialSession, specialUser]);
 
   const handleScroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -83,7 +92,7 @@ const CategoryCarousel = () => {
           <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-8 text-center text-sm text-red-700">
             Unable to load categories right now.
           </div>
-        ) : categories.length === 0 ? (
+        ) : visibleCategories.length === 0 ? (
           <div className="rounded-2xl border border-stone-200 bg-white px-6 py-8 text-center text-sm text-stone-600">
             No categories are available yet.
           </div>
@@ -92,18 +101,19 @@ const CategoryCarousel = () => {
             ref={scrollRef}
             className="flex items-start gap-4 overflow-x-auto pb-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {categories.map((category, index) => (
+            {visibleCategories.map((category, index) => (
               <div
                 key={category._id}
-                className={`shrink-0 min-w-[78%] sm:min-w-[46%] lg:min-w-[22%] xl:min-w-[21%] ${
+                className={`shrink-0 cursor-pointer min-w-[78%] sm:min-w-[46%] lg:min-w-[22%] xl:min-w-[21%] ${
                   staggerOffsets[index % staggerOffsets.length]
                 }`}
               >
+                <Link href={`/products?category=${category._id}`}>
                 <CategoryCard
                   name={category.name}
                   image={category.image}
-                  onClick={() => console.log("Go to category:", category._id)}
                 />
+                </Link>
               </div>
             ))}
           </div>

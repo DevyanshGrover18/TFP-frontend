@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
 import UserModal, { type UserFormValues } from "@/app/components/admin/users/UserModal";
 import DeleteModal from "@/app/components/common/DeleteModal";
 import {
@@ -11,6 +12,7 @@ import {
   updateUser,
   type UserRecord,
 } from "@/app/services/userService";
+import { getAllSpecialUsers } from "@/app/services/specialUserService";
 
 type ModalState = {
   mode: "create" | "update";
@@ -21,7 +23,6 @@ export default function UsersPage() {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalState, setModalState] = useState<ModalState>({
     mode: "create",
@@ -31,20 +32,36 @@ export default function UsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<UserRecord | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const isEmailTaken = async (email: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const [usersData, specialUsersData] = await Promise.all([
+      getAllUsers(),
+      getAllSpecialUsers(),
+    ]);
+
+    const existsInUsers = (usersData.users ?? []).some(
+      (user) => user.email.trim().toLowerCase() === normalizedEmail,
+    );
+    const existsInSpecialUsers = (specialUsersData.users ?? []).some(
+      (user) => user.email.trim().toLowerCase() === normalizedEmail,
+    );
+
+    return existsInUsers || existsInSpecialUsers;
+  };
+
   const loadUsers = async (silent = false) => {
     if (silent) {
       setIsRefreshing(true);
     } else {
       setIsLoading(true);
     }
-
-    setError("");
-
     try {
       const data = await getAllUsers();
       setUsers(data.users ?? []);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Failed to load users");
+      toast.error(
+        loadError instanceof Error ? loadError.message : "Failed to load users",
+      );
     } finally {
       if (silent) {
         setIsRefreshing(false);
@@ -91,7 +108,13 @@ export default function UsersPage() {
 
     try {
       if (modalState.mode === "create") {
+        if (await isEmailTaken(values.email)) {
+          throw new Error(
+            "A user with this email already exists in users or special users.",
+          );
+        }
         await createUser(values);
+        toast.success("User created successfully");
       } else if (modalState.user?.id) {
         const payload = {
           name: values.name,
@@ -101,12 +124,15 @@ export default function UsersPage() {
         };
 
         await updateUser(modalState.user.id, payload);
+        toast.success("User updated successfully");
       }
 
       setIsModalOpen(false);
       await loadUsers(true);
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Failed to save user");
+      toast.error(
+        saveError instanceof Error ? saveError.message : "Failed to save user",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -122,9 +148,14 @@ export default function UsersPage() {
     try {
       await deleteUser(deleteTarget.id);
       setDeleteTarget(null);
+      toast.success("User deleted successfully");
       await loadUsers(true);
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Failed to delete user");
+      toast.error(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Failed to delete user",
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -152,13 +183,6 @@ export default function UsersPage() {
           Add user
         </button>
       </div>
-
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
-
       <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <h2 className="text-sm font-semibold text-gray-900">All users</h2>

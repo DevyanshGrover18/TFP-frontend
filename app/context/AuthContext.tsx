@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { fetchApi } from "@/app/services/api";
+import { clearStoredUser, storeUser } from "@/app/services/userSession";
 
 export type SessionType = "user" | "special" | null;
 
@@ -110,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         specialUser: data.user,
       };
 
+      clearStoredUser();
       setState(next);
       writeSession(next);
     },
@@ -145,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       specialUser: null,
     };
 
+    storeUser(data.user);
     setState(next);
     writeSession(next);
   }, [state.sessionType]);
@@ -162,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }).catch(() => null);
     }
 
+    clearStoredUser();
     clearSession();
     setState({ sessionType: null, user: null, specialUser: null });
   }, [state.sessionType]);

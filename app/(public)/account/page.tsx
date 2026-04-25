@@ -4,18 +4,18 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import { useAuth } from "@/app/context/AuthContext";
 import { getMyOrders, type OrderRecord } from "@/app/services/orderService";
-import { logoutUser } from "@/app/services/userAuthService";
 import {
   getCurrentUserProfile,
   updateCurrentUserProfile,
   type UserQuoteProfile,
 } from "@/app/services/userService";
 import {
-  clearStoredUser,
-  getStoredUser,
-  storeUser,
-} from "@/app/services/userSession";
+  getStoredSpecialUserProfile,
+  storeSpecialUserProfile,
+} from "@/app/services/specialUserProfileSession";
+import { storeUser } from "@/app/services/userSession";
 
 const emptyProfile: UserQuoteProfile = {
   invoice: {
@@ -90,24 +90,44 @@ function splitName(name: string | undefined) {
   };
 }
 
+function hasProfileDetails(profile: UserQuoteProfile) {
+  return Boolean(
+    profile.invoice.companyName ||
+      profile.invoice.street ||
+      profile.invoice.city ||
+      profile.invoice.zip ||
+      profile.invoice.country ||
+      profile.shipping.companyName ||
+      profile.shipping.street ||
+      profile.shipping.city ||
+      profile.shipping.zip ||
+      profile.shipping.country ||
+      profile.details.emailInvoice ||
+      profile.details.mobile ||
+      profile.details.phone,
+  );
+}
+
 export default function AccountPage() {
   const router = useRouter();
+  const { user, specialUser, isSpecialSession, logout } = useAuth();
   const [profile, setProfile] = useState<UserQuoteProfile>(emptyProfile);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState("");
+  const [hasSavedDetails, setHasSavedDetails] = useState(false);
 
   useEffect(() => {
-    const user = getStoredUser();
+    const activeUser = isSpecialSession ? specialUser : user;
 
-    if (!user?.id) {
+    if (!activeUser?.id) {
       setIsLoading(false);
       return;
     }
 
-    const name = splitName(user.name);
+    const name = splitName(activeUser.name);
 
     setProfile((current) => ({
       ...current,
@@ -115,9 +135,33 @@ export default function AccountPage() {
         ...current.details,
         firstName: current.details.firstName || name.firstName,
         lastName: current.details.lastName || name.lastName,
-        email: current.details.email || user.email,
+        email: current.details.email || activeUser.email,
       },
     }));
+
+    if (isSpecialSession) {
+      const storedProfile = getStoredSpecialUserProfile(activeUser.id);
+
+      if (storedProfile) {
+        setProfile({
+          invoice: storedProfile.invoice,
+          shipping: storedProfile.shipping,
+          details: {
+            ...storedProfile.details,
+            firstName: storedProfile.details.firstName || name.firstName,
+            lastName: storedProfile.details.lastName || name.lastName,
+            email: storedProfile.details.email || activeUser.email,
+          },
+        });
+        setHasSavedDetails(hasProfileDetails(storedProfile));
+      } else {
+        setHasSavedDetails(false);
+      }
+
+      setOrders([]);
+      setIsLoading(false);
+      return;
+    }
 
     const loadAccount = async () => {
       try {
@@ -129,6 +173,7 @@ export default function AccountPage() {
 
         if (profileResponse.profile) {
           setProfile(profileResponse.profile);
+          setHasSavedDetails(hasProfileDetails(profileResponse.profile));
         }
 
         setOrders(ordersResponse.orders ?? []);
@@ -144,7 +189,7 @@ export default function AccountPage() {
     };
 
     void loadAccount();
-  }, []);
+  }, [isSpecialSession, specialUser, user]);
 
   const fullName = useMemo(
     () => `${profile.details.firstName} ${profile.details.lastName}`.trim(),
@@ -194,10 +239,19 @@ export default function AccountPage() {
     try {
       setIsSaving(true);
       setError("");
+
+      if (isSpecialSession && specialUser?.id) {
+        storeSpecialUserProfile(specialUser.id, profile);
+        setHasSavedDetails(hasProfileDetails(profile));
+        toast.success("Details saved");
+        return;
+      }
+
       const response = await updateCurrentUserProfile(profile);
 
       if (response.profile) {
         setProfile(response.profile);
+        setHasSavedDetails(hasProfileDetails(response.profile));
       }
 
       if (response.user) {
@@ -224,20 +278,19 @@ export default function AccountPage() {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-      await logoutUser();
+      await logout();
     } catch {
       // Clear local state even if the cookie is already missing.
     } finally {
-      clearStoredUser();
       router.push("/login");
       router.refresh();
       setIsLoggingOut(false);
     }
   };
 
-  const storedUser = getStoredUser();
+  const activeUser = isSpecialSession ? specialUser : user;
 
-  if (!storedUser && !isLoading) {
+  if (!activeUser && !isLoading) {
     return (
       <div className="min-h-screen bg-[#fafaf5] px-6 py-20 text-[#1a1c19]">
         <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center shadow-[0_20px_40px_rgba(26,28,25,0.06)]">
@@ -311,7 +364,7 @@ export default function AccountPage() {
                   </h2>
                 </div>
                 <p className="text-sm text-[#6b6a70]">
-                  {profile.details.email || storedUser?.email || "No email"}
+                  {profile.details.email || activeUser?.email || "No email"}
                 </p>
               </div>
 
@@ -321,6 +374,24 @@ export default function AccountPage() {
                 </p>
               ) : (
                 <div className="mt-6 space-y-8">
+                  {isSpecialSession && (
+                    <div className="rounded-3xl border border-[#ece7de] bg-[#fbf8f2] p-5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#7a736c]">
+                        Special access
+                      </p>
+                      <p className="mt-3 text-sm leading-6 text-[#47464c]">
+                        {hasSavedDetails
+                          ? "Your special-user details are loaded below."
+                          : "No saved details were found for this special user. Fill out the empty form below."}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-[#f3efe8] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#5f594f]">
+                          {specialUser?.allowedCategories.length ?? 0} allowed categories
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid gap-4 md:grid-cols-2">
                     <label className="space-y-2 text-sm font-medium text-[#47464c]">
                       <span>First name</span>
@@ -563,7 +634,11 @@ export default function AccountPage() {
                       disabled={isSaving}
                       className="rounded-md bg-[#01010f] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {isSaving ? "Saving..." : "Update details"}
+                      {isSaving
+                        ? "Saving..."
+                        : isSpecialSession
+                          ? "Save details"
+                          : "Update details"}
                     </button>
                   </div>
                 </div>
@@ -590,6 +665,11 @@ export default function AccountPage() {
               <div className="mt-6 space-y-4">
                 {isLoading ? (
                   <p className="text-sm text-[#47464c]">Loading orders...</p>
+                ) : isSpecialSession ? (
+                  <div className="rounded-2xl border border-dashed border-[#ddd6cc] p-6 text-sm text-[#6b6a70]">
+                    Special users do not have an account order history in this
+                    view.
+                  </div>
                 ) : orders.length > 0 ? (
                   orders.map((order) => (
                     <Link

@@ -2,6 +2,7 @@
 
 import { Eye } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import OrderModal from "@/app/components/admin/orders/OrderModal";
 import { getAllOrders, type OrderRecord } from "@/app/services/orderService";
 
@@ -23,18 +24,16 @@ function formatDate(value: string) {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
         setIsLoading(true);
-        setError("");
         const response = await getAllOrders();
         setOrders(response.orders ?? []);
       } catch (loadError) {
-        setError(
+        toast.error(
           loadError instanceof Error ? loadError.message : "Failed to load orders",
         );
       } finally {
@@ -71,13 +70,6 @@ export default function OrdersPage() {
           {orders.length} requests
         </span>
       </div>
-
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
-
       <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
         <div className="border-b border-gray-100 px-5 py-4">
           <h2 className="text-sm font-semibold text-gray-900">All quote requests</h2>

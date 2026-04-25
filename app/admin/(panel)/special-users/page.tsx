@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
 import SpecialUserModal, {
   type SpecialUserFormValues,
 } from "@/app/components/admin/special-users/SpecialUserModal";
@@ -13,6 +14,7 @@ import {
   getAllSpecialUsers,
   type SpecialUserRecord,
 } from "@/app/services/specialUserService";
+import { getAllUsers } from "@/app/services/userService";
 import {
   getAllCategories,
   type Category,
@@ -28,7 +30,6 @@ export default function SpecialUsersPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalState, setModalState] = useState<ModalState>({
     mode: "create",
@@ -40,14 +41,29 @@ export default function SpecialUsersPage() {
   );
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const isEmailTaken = async (email: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const [usersData, specialUsersData] = await Promise.all([
+      getAllUsers(),
+      getAllSpecialUsers(),
+    ]);
+
+    const existsInUsers = (usersData.users ?? []).some(
+      (user) => user.email.trim().toLowerCase() === normalizedEmail,
+    );
+    const existsInSpecialUsers = (specialUsersData.users ?? []).some(
+      (user) => user.email.trim().toLowerCase() === normalizedEmail,
+    );
+
+    return existsInUsers || existsInSpecialUsers;
+  };
+
   const loadData = async (silent = false) => {
     if (silent) {
       setIsRefreshing(true);
     } else {
       setIsLoading(true);
     }
-    setError("");
-
     try {
       const [usersData, categoriesData] = await Promise.all([
         getAllSpecialUsers(),
@@ -56,7 +72,7 @@ export default function SpecialUsersPage() {
       setUsers(usersData.users ?? []);
       setCategories(categoriesData.categories ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load data");
+      toast.error(err instanceof Error ? err.message : "Failed to load data");
     } finally {
       if (silent) {
         setIsRefreshing(false);
@@ -97,7 +113,13 @@ export default function SpecialUsersPage() {
 
     try {
       if (modalState.mode === "create") {
+        if (await isEmailTaken(values.email)) {
+          throw new Error(
+            "A user with this email already exists in users or special users.",
+          );
+        }
         await createSpecialUser(values);
+        toast.success("Special user created successfully");
       } else if (modalState.user?.id) {
         const payload = {
           name: values.name,
@@ -107,12 +129,13 @@ export default function SpecialUsersPage() {
           ...(values.password ? { password: values.password } : {}),
         };
         await updateSpecialUser(modalState.user.id, payload);
+        toast.success("Special user updated successfully");
       }
 
       setIsModalOpen(false);
       await loadData(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save user");
+      toast.error(err instanceof Error ? err.message : "Failed to save user");
     } finally {
       setIsSubmitting(false);
     }
@@ -125,9 +148,10 @@ export default function SpecialUsersPage() {
     try {
       await deleteSpecialUser(deleteTarget.id);
       setDeleteTarget(null);
+      toast.success("Special user deleted successfully");
       await loadData(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete user");
+      toast.error(err instanceof Error ? err.message : "Failed to delete user");
     } finally {
       setIsDeleting(false);
     }
@@ -158,13 +182,6 @@ export default function SpecialUsersPage() {
           Add special user
         </button>
       </div>
-
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
-
       <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <h2 className="text-sm font-semibold text-gray-900">

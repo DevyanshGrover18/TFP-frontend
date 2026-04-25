@@ -19,7 +19,7 @@ const AdminLogin: React.FC = () => {
     setLoading(true);
 
     if (!username || !password) {
-      setError("Please fill in all fields.");
+      toast.error("Please fill in all fields.");
       setLoading(false);
       return;
     }
@@ -31,11 +31,11 @@ const AdminLogin: React.FC = () => {
           router.replace("/admin");
           router.refresh();
         } else {
-          setError(res.message || "Invalid credentials.");
+          toast.error(res.message || "Invalid credentials.");
         }
       })
       .catch((err: unknown) => {
-        setError(
+        toast.error(
           err instanceof Error ? err.message : "An error occurred while logging in.",
         );
       })

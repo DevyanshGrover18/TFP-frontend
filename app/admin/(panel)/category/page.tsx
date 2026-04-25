@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
 import CategoryModal from "@/app/components/admin/category/CategoryModal";
 import DeleteModal from "@/app/components/common/DeleteModal";
 import {
@@ -31,7 +32,6 @@ export default function CategoryPage() {
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalState, setModalState] = useState<ModalState>({
     mode: "create",
@@ -49,8 +49,6 @@ export default function CategoryPage() {
     } else {
       setIsLoading(true);
     }
-    setError("");
-
     try {
       
       const data = (await getAllCategories()) as {
@@ -62,7 +60,7 @@ export default function CategoryPage() {
       setCategories(nextCategories);
       return nextCategories;
     } catch (loadError) {
-      setError(
+      toast.error(
         loadError instanceof Error
           ? loadError.message
           : "Failed to load categories",
@@ -127,14 +125,16 @@ export default function CategoryPage() {
 
       if (modalState.mode === "create") {
         await createCategory(payload);
+        toast.success("Category created successfully");
       } else if (modalState.category?._id) {
         await updateCategory(modalState.category._id, payload);
+        toast.success("Category updated successfully");
       }
 
       setIsModalOpen(false);
       await loadCategories(true);
     } catch (saveError) {
-      setError(
+      toast.error(
         saveError instanceof Error
           ? saveError.message
           : "Failed to save category",
@@ -155,9 +155,10 @@ export default function CategoryPage() {
       await deleteCategory(deleteTarget._id);
 
       setDeleteTarget(null);
+      toast.success("Category deleted successfully");
       await loadCategories(true);
     } catch (deleteError) {
-      setError(
+      toast.error(
         deleteError instanceof Error
           ? deleteError.message
           : "Failed to delete category",
@@ -264,13 +265,6 @@ export default function CategoryPage() {
           Add category
         </button>
       </div>
-
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
-
       <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between px-1 pb-4">
           <h2 className="text-sm font-semibold text-gray-900">Tree</h2>

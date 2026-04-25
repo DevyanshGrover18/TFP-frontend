@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
-import { loginUser } from "@/app/services/userAuthService";
-import { storeUser } from "@/app/services/userSession";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,6 +14,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { loginAsSpecialUser, loginAsUser } = useAuth();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -27,18 +27,20 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      const response = await loginUser(email, password);
+      let loggedInAsSpecial = false;
 
-      if (!response.success) {
-        setError(response.message ?? "Unable to sign in.");
-        return;
+      try {
+        await loginAsSpecialUser(email, password);
+        loggedInAsSpecial = true;
+      } catch {
+        await loginAsUser(email, password);
       }
 
-      if (response.user) {
-        storeUser(response.user);
-      }
-
-      toast.success("Signed in successfully");
+      toast.success(
+        loggedInAsSpecial
+          ? "Signed in as special user"
+          : "Signed in successfully",
+      );
       router.replace("/");
       router.refresh();
     } catch (err: unknown) {
@@ -86,10 +88,10 @@ export default function LoginPage() {
               Welcome Back
             </p>
             <h2 className="mt-4 font-serif text-4xl italic leading-tight text-primary">
-              User Login
+              Login
             </h2>
             <p className="mt-3 font-sans text-sm leading-6 text-primary/65">
-              Enter your details to access your account.
+              Enter your details to access your account or special catalog.
             </p>
 
             {error && (

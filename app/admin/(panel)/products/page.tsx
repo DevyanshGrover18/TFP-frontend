@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
 import DeleteModal from "@/app/components/common/DeleteModal";
 import ProductModal, {
   type CategoryNode,
@@ -26,7 +27,6 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalState, setModalState] = useState<ProductModalState>({
     mode: "create",
@@ -42,9 +42,6 @@ export default function ProductsPage() {
     } else {
       setIsLoading(true);
     }
-
-    setError("");
-
     try {
       const data = (await getAllProducts()) as {
         products?: ProductRecord[];
@@ -53,7 +50,11 @@ export default function ProductsPage() {
 
       setProducts(data.products ?? []);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Failed to load products");
+      toast.error(
+        loadError instanceof Error
+          ? loadError.message
+          : "Failed to load products",
+      );
     } finally {
       if (silent) {
         setIsRefreshing(false);
@@ -78,7 +79,7 @@ export default function ProductsPage() {
       try {
         await Promise.all([loadCategories(), loadProducts()]);
       } catch (initialError) {
-        setError(
+        toast.error(
           initialError instanceof Error
             ? initialError.message
             : "Failed to load products",
@@ -132,14 +133,20 @@ export default function ProductsPage() {
     try {
       if (modalState.mode === "create") {
         await createProduct(values);
+        toast.success("Product created successfully");
       } else if (modalState.product?._id) {
         await updateProduct(modalState.product._id, values);
+        toast.success("Product updated successfully");
       }
 
       setIsModalOpen(false);
       await loadProducts(true);
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Failed to save product");
+      toast.error(
+        saveError instanceof Error
+          ? saveError.message
+          : "Failed to save product",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -156,9 +163,10 @@ export default function ProductsPage() {
       await deleteProduct(deleteTarget._id);
 
       setDeleteTarget(null);
+      toast.success("Product deleted successfully");
       await loadProducts(true);
     } catch (deleteError) {
-      setError(
+      toast.error(
         deleteError instanceof Error ? deleteError.message : "Failed to delete product",
       );
     } finally {
@@ -188,13 +196,6 @@ export default function ProductsPage() {
           Add product
         </button>
       </div>
-
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
-
       <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <h2 className="text-sm font-semibold text-gray-900">All products</h2>

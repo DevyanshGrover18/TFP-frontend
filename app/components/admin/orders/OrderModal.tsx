@@ -4,6 +4,7 @@ import type { OrderRecord } from "@/app/services/orderService";
 import { updateOrderStatus } from "@/app/services/orderService";
 import { X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 
 const ORDER_STATUSES = ["Pending", "Processing", "Completed", "Cancelled"] as const;
 type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -81,8 +82,11 @@ export default function OrderModal({
       await updateOrderStatus(order!.id, newStatus);
       setCurrentStatus(newStatus);
       onStatusUpdate?.(order!.id, newStatus);
+      toast.success("Order status updated successfully");
     } catch (err) {
-      console.error("Failed to update status:", err);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update order status",
+      );
     } finally {
       setIsUpdating(false);
     }

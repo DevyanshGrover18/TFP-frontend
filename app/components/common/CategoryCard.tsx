@@ -6,12 +6,11 @@ type CategoryCardProps = {
   onClick?: () => void;
 };
 
-const CategoryCard: React.FC<CategoryCardProps> = ({ name, image, onClick }) => {
+const CategoryCard: React.FC<CategoryCardProps> = ({ name, image }) => {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="group relative w-full overflow-hidden rounded-2xl text-left transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
+      className="group cursor-pointer relative w-full overflow-hidden rounded-2xl text-left transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
     >
       {/* Full-bleed image */}
       <div className="relative w-full" style={{ aspectRatio: "3/4" }}>
