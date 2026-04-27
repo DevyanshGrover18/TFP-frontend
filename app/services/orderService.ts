@@ -18,6 +18,11 @@ export type OrderItemRecord = {
   } | null;
 };
 
+export type OrderField = {
+  key: string;
+  value: string;
+};
+
 export type OrderRecord = {
   _id: string;
   id: string;
@@ -32,6 +37,7 @@ export type OrderRecord = {
   itemCount: number;
   profile: UserQuoteProfile;
   items: OrderItemRecord[];
+  fields : OrderField[];
 };
 
 export const createOrder = async () => {
@@ -81,13 +87,17 @@ export const sendOrderSuccessMail = async (
   );
 };
 
-export const updateOrderStatus = async (id: string, status: string) => {
+export const updateOrderStatus = async (
+  id: string,
+  status?: string,
+  fields?: { key: string; value: string }[],
+) => {
   return fetchApi<{ success?: string; message?: string }>(`/orders/${id}`, {
-    method: "POST",
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, fields }),  // was: feilds (typo), and fields was missing
     credentials: "include",
   });
 };

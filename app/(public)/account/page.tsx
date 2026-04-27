@@ -28,7 +28,7 @@ const emptyProfile: UserQuoteProfile = {
     zip: "",
     country: "",
     notLiableForVat: false,
-    vatNumber: "",
+    gstNumber: "",
     chamberOfCommerce: "",
     category: { id: "", name: "" },
     website: "",
@@ -498,11 +498,11 @@ export default function AccountPage() {
                         />
                       </label>
                       <label className="space-y-2 text-sm font-medium text-[#47464c]">
-                        <span>VAT number</span>
+                        <span>GST number</span>
                         <input
-                          value={profile.invoice.vatNumber}
+                          value={profile.invoice.gstNumber}
                           onChange={(event) =>
-                            setInvoice("vatNumber", event.target.value)
+                            setInvoice("gstNumber", event.target.value)
                           }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />

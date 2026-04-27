@@ -16,6 +16,11 @@ import {
   type ProductRecord,
 } from "../../services/productsService";
 import { useAuth } from "@/app/context/AuthContext";
+import {
+  isProductAllowedForCategoryIds,
+  isProductVisibleForSession,
+  sortSpecialProductsFirst,
+} from "@/app/services/catalogAccess";
 
 type SidebarFilterGroup = {
   key: string;
@@ -61,8 +66,6 @@ const matchesMultiValueFilter = (
   if (!selectedValues.length) return true;
   return candidate ? selectedValues.includes(candidate) : false;
 };
-
-// ─── Sidebar filter section ───────────────────────────────────────────────────
 
 function SidebarFilterSection({
   title,
@@ -110,9 +113,7 @@ function SidebarFilterSection({
                 />
                 <span>{option.label}</span>
               </span>
-              <span
-                className={`${isActive ? "text-white/70" : "text-stone-400"}`}
-              >
+              <span className={isActive ? "text-white/70" : "text-stone-400"}>
                 {option.count}
               </span>
             </button>
@@ -122,8 +123,6 @@ function SidebarFilterSection({
     </div>
   );
 }
-
-// ─── Sidebar content (shared between desktop & mobile drawer) ─────────────────
 
 function SidebarContent({
   selectedCategories,
@@ -196,7 +195,7 @@ function SidebarContent({
           <button
             type="button"
             onClick={onClearFilters}
-            className="block w-full rounded-2xl border border-stone-200 py-3 text-center text-xs font-semibold uppercase tracking-widest text-stone-600 hover:bg-stone-50 transition-colors"
+            className="block w-full rounded-2xl border border-stone-200 py-3 text-center text-xs font-semibold uppercase tracking-widest text-stone-600 transition-colors hover:bg-stone-50"
           >
             Clear all filters
           </button>
@@ -228,9 +227,11 @@ function SidebarContent({
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
-
-const ProductsPageDetails = () => {
+export function ProductsPageDetails({
+  mode = "default",
+}: {
+  mode?: "default" | "special";
+}) {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [filters, setFilters] = useState<FiltersState>(EMPTY_FILTERS);
   const [isLoading, setIsLoading] = useState(true);
@@ -239,8 +240,8 @@ const ProductsPageDetails = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // ── Auth: get allowed categories for special session ──
   const { isSpecialSession, specialUser } = useAuth();
+  const isSpecialCatalog = mode === "special";
   const allowedCategoryIds = useMemo(
     () =>
       isSpecialSession && specialUser?.allowedCategories.length
@@ -297,45 +298,37 @@ const ProductsPageDetails = () => {
     void fetchPageData();
   }, []);
 
-  // Close sidebar on route change (filter toggle navigates)
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [searchParams]);
 
-  // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
-    if (isSidebarOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = isSidebarOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
   }, [isSidebarOpen]);
 
-  // ── Products scoped to special session ───────────────────────────────────
+  const visibleProducts = useMemo(
+    () =>
+      products.filter((product) =>
+        isProductVisibleForSession(product, isSpecialSession),
+      ),
+    [products, isSpecialSession],
+  );
+
   const scopedProducts = useMemo(() => {
-    if (!allowedCategoryIds) return products;
+    const baseProducts = isSpecialCatalog
+      ? visibleProducts.filter((product) =>
+          isProductAllowedForCategoryIds(product, allowedCategoryIds),
+        )
+      : visibleProducts;
 
-    return products.filter((product) => {
-      const catId = getProductRefId(product.categoryId as ProductRef);
-      const subCatId = getProductRefId(product.subCategoryId as ProductRef);
-      const subSubCatId = getProductRefId(
-        product.subSubCategoryId as ProductRef,
-      );
+    return isSpecialCatalog ? sortSpecialProductsFirst(baseProducts) : baseProducts;
+  }, [allowedCategoryIds, isSpecialCatalog, visibleProducts]);
 
-      return (
-        (catId && allowedCategoryIds.has(catId)) ||
-        (subCatId && allowedCategoryIds.has(subCatId)) ||
-        (subSubCatId && allowedCategoryIds.has(subSubCatId))
-      );
-    });
-  }, [products, allowedCategoryIds]);
-
-  // ── Scoped filters ───────────────────────────────────────────────────────
   const scopedFilters = useMemo<FiltersState>(() => {
-    if (!allowedCategoryIds) return filters;
+    if (!isSpecialCatalog || !allowedCategoryIds) return filters;
 
     const scopedCatIds = new Set(
       scopedProducts
@@ -365,7 +358,7 @@ const ProductsPageDetails = () => {
       ),
       specifications: filters.specifications,
     };
-  }, [filters, scopedProducts, allowedCategoryIds]);
+  }, [allowedCategoryIds, filters, isSpecialCatalog, scopedProducts]);
 
   const visibleSubCategories = useMemo(() => {
     if (!selectedCategories.length) return [];
@@ -411,20 +404,23 @@ const ProductsPageDetails = () => {
         if (
           ignoreParamKey !== CATEGORY_PARAM &&
           !matchesMultiValueFilter(selectedCategories, categoryId)
-        )
+        ) {
           return false;
+        }
 
         if (
           ignoreParamKey !== SUB_CATEGORY_PARAM &&
           !matchesMultiValueFilter(selectedSubCategories, subCategoryId)
-        )
+        ) {
           return false;
+        }
 
         if (
           ignoreParamKey !== SUB_SUB_CATEGORY_PARAM &&
           !matchesMultiValueFilter(selectedSubSubCategories, subSubCategoryId)
-        )
+        ) {
           return false;
+        }
 
         const specificationFilters =
           ignoreParamKey &&
@@ -443,9 +439,9 @@ const ProductsPageDetails = () => {
     [
       scopedProducts,
       selectedCategories,
+      selectedSpecificationFilters,
       selectedSubCategories,
       selectedSubSubCategories,
-      selectedSpecificationFilters,
     ],
   );
 
@@ -466,8 +462,9 @@ const ProductsPageDetails = () => {
           return false;
         if (
           !matchesMultiValueFilter(selectedSubSubCategories, subSubCategoryId)
-        )
+        ) {
           return false;
+        }
 
         return matchesSpecificationFilters(
           product,
@@ -477,9 +474,9 @@ const ProductsPageDetails = () => {
     [
       scopedProducts,
       selectedCategories,
+      selectedSpecificationFilters,
       selectedSubCategories,
       selectedSubSubCategories,
-      selectedSpecificationFilters,
     ],
   );
 
@@ -498,7 +495,7 @@ const ProductsPageDetails = () => {
         (option) =>
           option.count > 0 || selectedCategories.includes(option.id ?? ""),
       );
-  }, [scopedFilters.categories, selectedCategories, getProductsForCounts]);
+  }, [getProductsForCounts, scopedFilters.categories, selectedCategories]);
 
   const subCategoryOptions = useMemo(() => {
     if (!selectedCategories.length) return [];
@@ -517,10 +514,10 @@ const ProductsPageDetails = () => {
           option.count > 0 || selectedSubCategories.includes(option.id ?? ""),
       );
   }, [
-    visibleSubCategories,
+    getProductsForCounts,
     selectedCategories.length,
     selectedSubCategories,
-    getProductsForCounts,
+    visibleSubCategories,
   ]);
 
   const subSubCategoryOptions = useMemo(() => {
@@ -542,15 +539,15 @@ const ProductsPageDetails = () => {
           selectedSubSubCategories.includes(option.id ?? ""),
       );
   }, [
-    visibleSubSubCategories,
+    getProductsForCounts,
     selectedSubCategories,
     selectedSubSubCategories,
-    getProductsForCounts,
+    visibleSubSubCategories,
   ]);
 
   const sidebarSpecificationGroups = useMemo<SidebarFilterGroup[]>(
     () =>
-      filters.specifications
+      scopedFilters.specifications
         .map((group) => {
           const baseProducts = getProductsForCounts({
             ignoreParamKey: group.key,
@@ -584,25 +581,31 @@ const ProductsPageDetails = () => {
         })
         .filter((group) => group.values.length > 0),
     [
-      filters.specifications,
-      selectedSpecificationFilters,
       getProductsForCounts,
+      scopedFilters.specifications,
+      selectedSpecificationFilters,
     ],
   );
 
   const activeTitle = useMemo(() => {
-    if (selectedSubSubCategories.length)
+    if (selectedSubSubCategories.length) {
       return `${selectedSubSubCategories.length} sub-sub-category selections`;
-    if (selectedSubCategories.length)
+    }
+    if (selectedSubCategories.length) {
       return `${selectedSubCategories.length} sub-category selections`;
-    if (selectedCategories.length)
+    }
+    if (selectedCategories.length) {
       return `${selectedCategories.length} category selections`;
-    return isSpecialSession ? "Your catalog" : "All products";
+    }
+    if (isSpecialCatalog) {
+      return "Your special catalog";
+    }
+    return "All products";
   }, [
+    isSpecialCatalog,
     selectedCategories,
     selectedSubCategories,
     selectedSubSubCategories,
-    isSpecialSession,
   ]);
 
   const hasActiveFilters =
@@ -616,6 +619,8 @@ const ProductsPageDetails = () => {
     selectedSubCategories.length +
     selectedSubSubCategories.length +
     Object.keys(selectedSpecificationFilters).length;
+
+  const basePath = isSpecialCatalog ? "/special/products" : "/products";
 
   const toggleFilter = (paramKey: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -679,11 +684,11 @@ const ProductsPageDetails = () => {
     }
 
     const query = params.toString();
-    router.replace(query ? `/products?${query}` : "/products");
+    router.replace(query ? `${basePath}?${query}` : basePath);
   };
 
   const handleClearFilters = () => {
-    router.replace("/products");
+    router.replace(basePath);
   };
 
   const sharedSidebarProps = {
@@ -701,21 +706,19 @@ const ProductsPageDetails = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f6f2ea] text-stone-900">
-      {isSpecialSession && (
+      {isSpecialCatalog && isSpecialSession && (
         <div className="bg-stone-900 px-6 py-2.5 text-center text-xs font-medium uppercase tracking-widest text-white/70">
-          Special session active —{" "}
+          Special catalog active -{" "}
           <span className="text-white">
             {specialUser?.allowedCategories.length} categories
           </span>{" "}
-          in your catalog
+          available to your account
         </div>
       )}
 
       <main className="flex-1 pb-16 pt-4">
         <section className="mt-8 px-4 sm:px-6 lg:px-10">
           <div className="mx-auto max-w-7xl">
-
-            {/* ── Mobile filter toggle bar ──────────────────────────────── */}
             <div className="mb-4 flex items-center justify-between lg:hidden">
               <p className="text-sm font-semibold uppercase tracking-widest text-stone-500">
                 {filteredProducts.length}{" "}
@@ -724,7 +727,7 @@ const ProductsPageDetails = () => {
               <button
                 type="button"
                 onClick={() => setIsSidebarOpen(true)}
-                className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-700 shadow-sm active:bg-stone-100 transition-colors"
+                className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-700 shadow-sm transition-colors active:bg-stone-100"
               >
                 <svg
                   className="h-4 w-4"
@@ -748,23 +751,19 @@ const ProductsPageDetails = () => {
               </button>
             </div>
 
-            {/* ── Mobile sidebar drawer ─────────────────────────────────── */}
             {isSidebarOpen && (
               <div className="fixed inset-0 z-50 lg:hidden">
-                {/* Backdrop */}
                 <div
                   className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                   onClick={() => setIsSidebarOpen(false)}
                 />
-                {/* Bottom sheet */}
                 <aside className="absolute bottom-0 left-0 right-0 max-h-[88vh] overflow-y-auto rounded-t-[2rem] bg-white shadow-2xl">
-                  {/* Handle bar */}
-                  <div className="flex justify-center pt-3 pb-1">
+                  <div className="flex justify-center pb-1 pt-3">
                     <div className="h-1 w-10 rounded-full bg-stone-200" />
                   </div>
 
                   <div className="px-6 pb-10">
-                    <div className="flex items-center justify-between py-4 border-b border-stone-100">
+                    <div className="flex items-center justify-between border-b border-stone-100 py-4">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
                           Catalog Filters
@@ -772,7 +771,8 @@ const ProductsPageDetails = () => {
                         <h2
                           className="mt-1 text-2xl italic text-stone-900"
                           style={{
-                            fontFamily: "'Georgia', 'Times New Roman', serif",
+                            fontFamily:
+                              "'Georgia', 'Times New Roman', serif",
                           }}
                         >
                           Refined selection
@@ -781,7 +781,7 @@ const ProductsPageDetails = () => {
                       <button
                         type="button"
                         onClick={() => setIsSidebarOpen(false)}
-                        className="rounded-full bg-stone-100 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-700 hover:bg-stone-200 transition-colors"
+                        className="rounded-full bg-stone-100 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-700 transition-colors hover:bg-stone-200"
                       >
                         Done
                       </button>
@@ -796,11 +796,8 @@ const ProductsPageDetails = () => {
               </div>
             )}
 
-            {/* ── Main grid ────────────────────────────────────────────── */}
             <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-
-              {/* Desktop sidebar — hidden on mobile */}
-              <aside className="hidden h-fit rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm lg:block lg:sticky lg:top-28">
+              <aside className="hidden h-fit rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm lg:sticky lg:top-28 lg:block">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
                     Catalog Filters
@@ -815,15 +812,14 @@ const ProductsPageDetails = () => {
                   </h2>
                   <p className="mt-4 text-sm leading-6 text-stone-600">
                     Select one or more categories first. Sub-categories and
-                    sub-sub-categories only appear after their parent selections
-                    are made.
+                    sub-sub-categories only appear after their parent
+                    selections are made.
                   </p>
                 </div>
 
                 <SidebarContent {...sharedSidebarProps} />
               </aside>
 
-              {/* ── Product grid ──────────────────────────────────────── */}
               <div>
                 <div className="mb-6 flex flex-col gap-4 rounded-[2rem] border border-stone-200 bg-white px-5 py-5 shadow-sm sm:flex-row sm:items-end sm:justify-between sm:px-6">
                   <div>
@@ -853,7 +849,7 @@ const ProductsPageDetails = () => {
                     {filteredProducts.length === 1 ? "product" : "products"}
                     {hasActiveFilters && (
                       <Link
-                        href="/products"
+                        href={basePath}
                         className="ml-3 text-xs text-stone-400 underline underline-offset-2 transition-colors hover:text-stone-700"
                       >
                         Clear filters
@@ -879,6 +875,7 @@ const ProductsPageDetails = () => {
                         image={getProductPrimaryImage(product)}
                         href={getProductHref(product)}
                         badges={product.badges}
+                        isSpecial={product.isSpecial}
                         details={{
                           sku: product.sku,
                           composition: getProductSpecification(
@@ -905,7 +902,7 @@ const ProductsPageDetails = () => {
                     <p className="mt-3 text-sm text-stone-500">
                       No results match the current filters.{" "}
                       <Link
-                        href="/products"
+                        href={basePath}
                         className="underline underline-offset-2 transition-colors hover:text-stone-800"
                       >
                         View all products
@@ -920,12 +917,12 @@ const ProductsPageDetails = () => {
       </main>
     </div>
   );
-};
+}
 
 export default function ProductPage() {
   return (
     <Suspense>
-      <ProductsPageDetails />
+      <ProductsPageDetails mode="default" />
     </Suspense>
   );
 }

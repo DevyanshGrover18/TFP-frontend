@@ -22,6 +22,7 @@ export type ProductPayload = {
     gallery: string[];
   };
   badges: string[];
+  isSpecial?: boolean;
   variants: Array<{
     id : string,
     sku : string,
@@ -54,6 +55,7 @@ export type ProductRecord = {
     gallery: string[];
   };
   badges: string[];
+  isSpecial?: boolean;
   variants: Array<{
     id: string,
     sku : string,
@@ -95,7 +97,7 @@ export function createProductSlug(name: string) {
   return name
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "%20")
+    .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 

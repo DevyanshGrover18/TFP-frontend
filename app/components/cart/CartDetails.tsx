@@ -104,7 +104,7 @@ export default function CartDetails() {
             className="mb-3 text-5xl italic tracking-tight text-[#01010f]"
             style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
           >
-            Bulk Order
+            Sample Order
           </h1>
           <p className="max-w-xl text-sm leading-6 text-[#47464c]">
             Manage and review your professional wholesale fabric orders before

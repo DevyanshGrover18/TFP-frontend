@@ -21,7 +21,7 @@ export type QuoteInvoiceProfile = {
   zip: string;
   country: string;
   notLiableForVat: boolean;
-  vatNumber: string;
+  gstNumber?: string;
   chamberOfCommerce: string;
   category: QuoteCategoryValue;
   website: string;

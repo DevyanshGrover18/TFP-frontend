@@ -48,6 +48,7 @@ export type ProductFormValues = {
     gallery: string[];
   };
   badges: string[];
+  isSpecial: boolean;
   variants: ProductVariant[];
 };
 
@@ -93,6 +94,7 @@ const emptyValues: ProductFormValues = {
     gallery: [],
   },
   badges: [],
+  isSpecial: false,
   variants: [],
 };
 
@@ -124,6 +126,7 @@ function cloneInitialValues(
       ...initialValues?.media,
       gallery: [...(initialValues?.media?.gallery ?? [])],
     },
+    isSpecial: initialValues?.isSpecial ?? false,
     variants: initialValues?.variants?.length
       ? initialValues.variants.map((variant) => ({
           id: variant.id ?? crypto.randomUUID(),
@@ -576,6 +579,7 @@ const ProductModal = ({
           .filter(Boolean),
       },
       badges: values.badges.map((badge) => badge.trim()).filter(Boolean),
+      isSpecial: values.isSpecial,
       variants: trimmedVariants,
     };
 
@@ -724,6 +728,23 @@ const ProductModal = ({
           ))}
         </select>
       </div>
+
+      <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 md:col-span-2">
+        <input
+          type="checkbox"
+          checked={values.isSpecial}
+          onChange={(event) => updateField("isSpecial", event.target.checked)}
+          className="mt-1 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+        />
+        <span className="space-y-1">
+          <span className="block text-sm font-medium text-gray-700">
+            Mark as special
+          </span>
+          <span className="block text-xs text-gray-500">
+            Hide this product from normal users and expose it to special users only.
+          </span>
+        </span>
+      </label>
 
       <label className="space-y-2 text-sm font-medium text-gray-700 md:col-span-2">
         <span>Description</span>

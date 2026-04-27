@@ -1,11 +1,7 @@
 "use client";
 
 import { getAllCategories } from "@/app/services/categoriesService";
-import { useAuth } from "@/app/context/AuthContext";
-import {
-  filterCategoryTreeByAllowedIds,
-  type CatalogCategoryNode,
-} from "@/app/services/catalogAccess";
+import { type CatalogCategoryNode } from "@/app/services/catalogAccess";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import CategoryCard from "../common/CategoryCard";
 import Link from "next/link";
@@ -15,7 +11,6 @@ const CategoryCarousel = () => {
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { isSpecialSession, specialUser } = useAuth();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -35,16 +30,8 @@ const CategoryCarousel = () => {
   }, []);
 
   const visibleCategories = useMemo(() => {
-    const topLevelCategories =
-      isSpecialSession && specialUser?.allowedCategories.length
-        ? filterCategoryTreeByAllowedIds(
-            categories,
-            specialUser.allowedCategories,
-          )
-        : categories;
-
-    return topLevelCategories.filter((category) => category.level === 1);
-  }, [categories, isSpecialSession, specialUser]);
+    return categories.filter((category) => category.level === 1);
+  }, [categories]);
 
   const handleScroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;

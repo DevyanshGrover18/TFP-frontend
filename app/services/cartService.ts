@@ -52,3 +52,9 @@ export const removeCartItem = async (payload: {
     body: JSON.stringify(payload),
     onUnauthorizedRedirectTo: "/login",
   });
+
+export const clearCart = async (id : string)=>{
+  return fetchApi<{success : boolean, message : string}>(`/cart/clear`,{
+    method : "DELETE",
+  })
+}

@@ -9,6 +9,7 @@ type ProductCardProps = {
   category?: string | ProductCategoryRef;
   badge?: string;
   badges?: string[];
+  isSpecial?: boolean;
   price?: string;
   priceUnit?: string;
   priceType?: string;
@@ -28,6 +29,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   href,
   badge,
   badges,
+  isSpecial = false,
   price,
   priceUnit = "yard",
   priceType = "Wholesale",
@@ -40,89 +42,106 @@ const ProductCard: React.FC<ProductCardProps> = ({
     { label: "Width", value: details?.width },
     { label: "Weight", value: details?.weight },
   ].filter((detail) => detail.value);
-  const visibleBadges =
-    badges?.filter(Boolean).length ? badges.filter(Boolean) : badge ? [badge] : [];
+
+  const visibleBadges = badges?.filter(Boolean).length
+    ? badges.filter(Boolean)
+    : badge
+      ? [badge]
+      : [];
 
   const content = (
     <>
-      <div className="relative overflow-hidden rounded-2xl">
-        <img
-          src={image}
-          alt={name}
-          className="aspect-3/4 w-full object-cover transition-transform duration-700 group-hover:scale-105"
-        />
-
-        {visibleBadges.length ? (
-          <div className="absolute -rotate-45 -left-14 top-6 z-10 flex max-w-[70%] flex-wrap gap-2">
-            {visibleBadges.map((item) => (
-              <span
-                key={item}
-                className="w-72 text-center bg-red-500 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
+      <div className="relative bg-transparent">
+        {isSpecial ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-2xl"
+            style={{
+              boxShadow:
+                "0 0 18px 8px rgba(255,210,80,0.35), 0 0 40px 18px rgba(216,178,77,0.25), 0 0 70px 32px rgba(200,155,40,0.15), 0 0 110px 55px rgba(180,130,20,0.08)",
+            }}
+          />
         ) : null}
 
-        {detailRows.length > 0 && (
-          <div
-            className="absolute inset-0 flex translate-y-2 flex-col justify-end p-4 opacity-0 transition-all duration-400 ease-out group-hover:translate-y-0 group-hover:opacity-100"
-            style={{
-              background:
-                "linear-gradient(to top, rgba(30,25,20,0.82) 0%, rgba(30,25,20,0.45) 55%, transparent 100%)",
-            }}
-          >
-            {details?.sku && (
-              <p
-                className="mb-3 text-[10px] uppercase tracking-widest"
-                style={{ color: "rgba(255,255,255,0.45)" }}
-              >
-                {details.sku}
-              </p>
-            )}
+        <div className={`relative overflow-hidden rounded-2xl  ${isSpecial && " border border-[rgb(255,210,80)]"}`}>
+          <img
+            src={image}
+            alt={name}
+            className="aspect-3/4 w-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
 
-            <div className="space-y-1.5">
-              {detailRows.map((row) => (
-                <div
-                  key={row.label}
-                  className="flex items-baseline justify-between gap-3"
+          {visibleBadges.length ? (
+            <div className="absolute -left-14 top-6 z-10 flex max-w-[70%] -rotate-45 flex-wrap gap-2">
+              {visibleBadges.map((item) => (
+                <span
+                  key={item}
+                  className="w-72 bg-red-500 px-2.5 py-1 text-center text-xs font-semibold uppercase tracking-wide text-white shadow-sm"
                 >
-                  <span
-                    className="shrink-0 text-[11px] uppercase tracking-wider"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    {row.label}
-                  </span>
-                  <span
-                    className="text-right text-[12px] font-medium"
-                    style={{
-                      color: "rgba(255,255,255,0.92)",
-                      fontFamily: "'Georgia', serif",
-                    }}
-                  >
-                    {row.value}
-                  </span>
-                </div>
+                  {item}
+                </span>
               ))}
             </div>
+          ) : null}
 
+          {detailRows.length > 0 && (
             <div
-              className="mt-3 flex items-center justify-between pt-3"
-              style={{ borderTop: "1px solid rgba(255,255,255,0.15)" }}
+              className="absolute inset-0 flex translate-y-2 flex-col justify-end p-4 opacity-0 transition-all duration-400 ease-out group-hover:translate-y-0 group-hover:opacity-100"
+              style={{
+                background:
+                  "linear-gradient(to top, rgba(30,25,20,0.82) 0%, rgba(30,25,20,0.45) 55%, transparent 100%)",
+              }}
             >
-              <span
-                className="text-[11px] uppercase tracking-[0.18em]"
-                style={{ color: "rgba(255,255,255,0.55)" }}
+              {details?.sku && (
+                <p
+                  className="mb-3 text-[10px] uppercase tracking-widest"
+                  style={{ color: "rgba(255,255,255,0.45)" }}
+                >
+                  {details.sku}
+                </p>
+              )}
+
+              <div className="space-y-1.5">
+                {detailRows.map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex items-baseline justify-between gap-3"
+                  >
+                    <span
+                      className="shrink-0 text-[11px] uppercase tracking-wider"
+                      style={{ color: "rgba(255,255,255,0.5)" }}
+                    >
+                      {row.label}
+                    </span>
+                    <span
+                      className="text-right text-[12px] font-medium"
+                      style={{
+                        color: "rgba(255,255,255,0.92)",
+                        fontFamily: "'Georgia', serif",
+                      }}
+                    >
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                className="mt-3 flex items-center justify-between pt-3"
+                style={{ borderTop: "1px solid rgba(255,255,255,0.15)" }}
               >
-                View Details
-              </span>
-              <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 16 }}>
-                →
-              </span>
+                <span
+                  className="text-[11px] uppercase tracking-[0.18em]"
+                  style={{ color: "rgba(255,255,255,0.55)" }}
+                >
+                  View Details
+                </span>
+                <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 16 }}>
+                  →
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="mt-3 space-y-0.5 px-0.5">
@@ -159,7 +178,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
     return (
       <Link
         href={href}
-        className="group block w-full cursor-pointer text-left transition-all duration-300"
+        className={`group block w-full cursor-pointer bg-transparent text-left transition-all duration-300 ${
+          isSpecial ? "rounded-2xl" : ""
+        }`}
       >
         {content}
       </Link>
@@ -170,7 +191,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
     <button
       type="button"
       onClick={onClick}
-      className="group w-full cursor-pointer text-left transition-all duration-300"
+      className={`group w-full cursor-pointer bg-transparent text-left transition-all duration-300 ${
+        isSpecial ? "rounded-2xl" : ""
+      }`}
     >
       {content}
     </button>

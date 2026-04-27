@@ -142,6 +142,7 @@ export default function ProductsPage() {
       specifications: modalState.product.specifications,
       media: modalState.product.media,
       badges: modalState.product.badges,
+      isSpecial: modalState.product.isSpecial ?? false,
       variants: modalState.product.variants,
     };
   }, [modalState.product]);
@@ -293,6 +294,7 @@ export default function ProductsPage() {
                   <th className="px-5 py-4 font-medium">SKU</th>
                   <th className="px-5 py-4 font-medium">Image</th>
                   <th className="px-5 py-4 font-medium">Name</th>
+                  <th className="px-5 py-4 font-medium">Visibility</th>
                   <th className="px-5 py-4 font-medium">Color Code</th>
                   <th className="px-5 py-4 font-medium">Category Path</th>
                   <th className="px-5 py-4 font-medium text-right">Actions</th>
@@ -317,6 +319,9 @@ export default function ProductsPage() {
                       )}
                     </td>
                     <td className="px-5 py-4 font-medium text-gray-900">{product.name}</td>
+                    <td className="px-5 py-4 text-gray-600">
+                      {product.isSpecial ? "Special only" : "Public"}
+                    </td>
                     <td className="px-5 py-4 text-gray-600">{product.colorCode}</td>
                     <td className="px-5 py-4 text-gray-600">
                       {[

@@ -9,6 +9,8 @@ import {
   type UserQuoteProfile,
 } from "@/app/services/userService";
 import { getStoredUser, storeUser } from "@/app/services/userSession";
+import { clearCart } from "@/app/services/cartService";
+import { useCartCount } from "@/app/context/CartCountContext";
 
 type InvoiceAddress = UserQuoteProfile["invoice"];
 type ShippingAddress = UserQuoteProfile["shipping"];
@@ -51,7 +53,7 @@ const emptyForm: FormData = {
     zip: "",
     country: "",
     notLiableForVat: false,
-    vatNumber: "",
+    gstNumber: "",
     chamberOfCommerce: "",
     category: EMPTY_CATEGORY,
     website: "",
@@ -204,6 +206,7 @@ export default function RegistrationForm() {
   const [loadingCountries, setLoadingCountries] = useState(true);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { setCount } = useCartCount();
 
   useEffect(() => {
     fetch("https://restcountries.com/v3.1/all?fields=name,idd,cca2,flag")
@@ -330,10 +333,8 @@ export default function RegistrationForm() {
       if (!form.invoice.zip.trim())
         nextErrors.zip = "Zip / postal code is required";
       if (!form.invoice.country) nextErrors.country = "Country is required";
-      if (!form.invoice.notLiableForVat && !form.invoice.vatNumber.trim()) {
-        nextErrors.vatNumber = "VAT number is required";
-      }
-      if (!form.invoice.category.name) nextErrors.category = "Category is required";
+      if (!form.invoice.category.name)
+        nextErrors.category = "Category is required";
     }
 
     if (currentStep === 1 && !form.shipping.sameAsInvoice) {
@@ -406,14 +407,19 @@ export default function RegistrationForm() {
       }
 
       const orderResponse = await createOrder();
+      console.log(orderResponse);
       if (orderResponse.success) {
         await sendOrderSuccessMail(
-          response.user?.name,
-          response.user?.email,
-          orderResponse.order?._id,
+          orderResponse.order?.customerName,
+          orderResponse.order?.email,
+          orderResponse.order?.id,
         );
       }
       setSubmitted(true);
+      if (response.user) {
+        await clearCart(response.user.id);
+        setCount(0);
+      }
       toast.success(
         orderResponse.message ??
           response.message ??
@@ -581,55 +587,19 @@ export default function RegistrationForm() {
               </div>
 
               <div className="space-y-4 rounded-2xl border border-gray-200 p-4">
-                <label className="flex cursor-pointer items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={form.invoice.notLiableForVat}
-                    onChange={(event) =>
-                      setInvoice({ notLiableForVat: event.target.checked })
-                    }
-                    disabled={isLoadingProfile}
-                    className="h-4 w-4 rounded accent-red-600"
-                  />
-                  <span className="text-sm text-gray-700">
-                    I am not liable for VAT
-                  </span>
-                </label>
-
-                {!form.invoice.notLiableForVat && (
-                  <label className={labelClass}>
-                    <span>
-                      VAT nr. (starting with your country code){" "}
-                      <span className="text-red-500">*</span>
-                    </span>
-                    <input
-                      value={form.invoice.vatNumber}
-                      onChange={(event) =>
-                        setInvoice({ vatNumber: event.target.value })
-                      }
-                      type="text"
-                      disabled={isLoadingProfile}
-                      className={`${inputClass} ${errors.vatNumber ? "border-red-400" : ""}`}
-                    />
-                    <p className="text-xs text-gray-400">
-                      Please start with your country code immediately followed
-                      by the rest of your VAT number.
-                    </p>
-                    <FieldError message={errors.vatNumber} />
-                  </label>
-                )}
-
                 <label className={labelClass}>
-                  <span>Chamber of commerce nr.</span>
+                  <span>GST Number</span>
                   <input
-                    value={form.invoice.chamberOfCommerce}
+                    value={form.invoice.gstNumber}
                     onChange={(event) =>
-                      setInvoice({ chamberOfCommerce: event.target.value })
+                      setInvoice({ gstNumber: event.target.value })
                     }
                     type="text"
                     disabled={isLoadingProfile}
-                    className={inputClass}
+                    className={`${inputClass} ${errors.vatNumber ? "border-red-400" : ""}`}
                   />
+
+                  <FieldError message={errors.vatNumber} />
                 </label>
               </div>
 
@@ -642,7 +612,9 @@ export default function RegistrationForm() {
                   onChange={(event) =>
                     setInvoice({
                       category: {
-                        id: event.target.value.toLowerCase().replace(/\s+/g, "-"),
+                        id: event.target.value
+                          .toLowerCase()
+                          .replace(/\s+/g, "-"),
                         name: event.target.value,
                       },
                     })
@@ -883,7 +855,7 @@ export default function RegistrationForm() {
 
               <div className="space-y-2">
                 <span className="text-sm font-medium text-gray-700">
-                  Telephone <span className="text-red-500">*</span>
+                  Mobile <span className="text-red-500">*</span>
                 </span>
                 <PhoneRow
                   codeValue={form.details.mobileCode}
@@ -895,13 +867,17 @@ export default function RegistrationForm() {
                   countries={countries}
                   disabled={loadingCountries || isLoadingProfile}
                 />
+
+                <span className="text-sm font-medium text-gray-700">
+                  Phone{" "}
+                  <span className="text-gray-400 font-normal">(optional)</span>
+                </span>
                 <PhoneRow
                   codeValue={form.details.phoneCode}
                   onCodeChange={(value) => setDetails({ phoneCode: value })}
                   numberValue={form.details.phone}
                   onNumberChange={(value) => setDetails({ phone: value })}
                   placeholder="Phone number"
-                  error={errors.phone}
                   countries={countries}
                   disabled={loadingCountries || isLoadingProfile}
                 />

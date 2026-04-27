@@ -1,14 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import React, { useState, useRef, useEffect } from "react";
-import { Search, User, ShoppingBag, ChevronDown, Menu, X } from "lucide-react";
-import { getAllCategories } from "@/app/services/categoriesService";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Search,
+  User,
+  ShoppingBag,
+  ChevronDown,
+  Menu,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getAllCategories } from "@/app/services/categoriesService";
 import { useAuth } from "@/app/context/AuthContext";
 import { useCartCount } from "@/app/context/CartCountContext";
 import { getCartItems } from "@/app/services/cartService";
 import { getStoredUser } from "@/app/services/userSession";
+import SpecialUserLoginModal from "@/app/components/specialUsers/SpecialUserLoginModal";
 
 type CategoryNode = {
   _id: string;
@@ -18,35 +26,6 @@ type CategoryNode = {
   level: number;
   children?: CategoryNode[];
 };
-
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
-function filterCategoryTree(
-  nodes: CategoryNode[],
-  allowedIds: string[],
-): CategoryNode[] {
-  const allowed = new Set(allowedIds);
-
-  function walk(node: CategoryNode): CategoryNode | null {
-    if (allowed.has(node._id)) return node;
-
-    if (node.children && node.children.length > 0) {
-      const filteredChildren = node.children
-        .map(walk)
-        .filter(Boolean) as CategoryNode[];
-
-      if (filteredChildren.length > 0) {
-        return { ...node, children: filteredChildren };
-      }
-    }
-
-    return null;
-  }
-
-  return nodes.map(walk).filter(Boolean) as CategoryNode[];
-}
-
-// ─── Mega Menu ────────────────────────────────────────────────────────────────
 
 const MegaMenu = ({
   category,
@@ -58,13 +37,13 @@ const MegaMenu = ({
   const hasChildren = (category.children?.length ?? 0) > 0;
 
   return (
-    <div className="absolute left-0 right-0 top-full z-50 bg-neutral border-t border-tertiary shadow-sm">
-      <div className="max-w-5xl mx-auto px-10 py-8">
+    <div className="absolute left-0 right-0 top-full z-50 border-t border-tertiary bg-neutral shadow-sm">
+      <div className="mx-auto max-w-5xl px-10 py-8">
         {hasChildren ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-4">
             {category.children!.map((child) => (
               <div key={child._id}>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary mb-3">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-secondary">
                   {child.name}
                 </p>
                 {(child.children?.length ?? 0) > 0 && (
@@ -74,7 +53,7 @@ const MegaMenu = ({
                         <a
                           href={`/products?category=${category._id}&subcategory=${child._id}&subsubcategory=${sub._id}`}
                           onClick={onClose}
-                          className="text-sm text-primary hover:text-secondary transition-colors duration-150"
+                          className="text-sm text-primary transition-colors duration-150 hover:text-secondary"
                         >
                           {sub.name}
                         </a>
@@ -93,16 +72,16 @@ const MegaMenu = ({
   );
 };
 
-// ─── Mobile Drawer ────────────────────────────────────────────────────────────
-
 const MobileDrawer = ({
   categories,
   isOpen,
   onClose,
+  onSpecialClick,
 }: {
   categories: CategoryNode[];
   isOpen: boolean;
   onClose: () => void;
+  onSpecialClick: () => void;
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
@@ -117,28 +96,28 @@ const MobileDrawer = ({
       <div
         className={`fixed inset-0 z-40 bg-black/30 transition-opacity duration-300 md:hidden ${
           isOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
         }`}
         onClick={onClose}
       />
 
       <div
-        className={`fixed top-0 left-0 z-50 h-full w-[300px] bg-neutral flex flex-col transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed left-0 top-0 z-50 flex h-full w-[300px] flex-col bg-neutral transition-transform duration-300 ease-in-out md:hidden ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[#ddd6cc]">
+        <div className="flex items-center justify-between border-b border-[#ddd6cc] px-6 py-5">
           <Link
             href="/"
             onClick={onClose}
-            className="text-lg font-bold tracking-tight text-primary font-serif italic"
+            className="font-serif text-lg font-bold italic tracking-tight text-primary"
           >
             The Fabric People
           </Link>
           <button
             onClick={onClose}
-            className="text-[#9a9088] hover:text-[#171512] transition-colors"
+            className="text-[#9a9088] transition-colors hover:text-[#171512]"
             aria-label="Close menu"
           >
             <X size={20} strokeWidth={1.5} />
@@ -154,9 +133,9 @@ const MobileDrawer = ({
               <div key={category._id} className="border-b border-[#f0ebe4]">
                 <button
                   onClick={() => hasChildren && toggle(category._id)}
-                  className="flex items-center justify-between w-full px-2 py-3.5 text-left"
+                  className="flex w-full items-center justify-between px-2 py-3.5 text-left"
                 >
-                  <span className="text-sm italic font-medium text-[#171512]">
+                  <span className="text-sm font-medium italic text-[#171512]">
                     {category.name}
                   </span>
                   {hasChildren && (
@@ -182,7 +161,7 @@ const MobileDrawer = ({
                             onClick={() =>
                               hasGrandChildren && toggleSub(child._id)
                             }
-                            className="flex items-center justify-between w-full px-2 py-2 text-left"
+                            className="flex w-full items-center justify-between px-2 py-2 text-left"
                           >
                             <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7a736c]">
                               {child.name}
@@ -198,13 +177,13 @@ const MobileDrawer = ({
                           </button>
 
                           {hasGrandChildren && isSubExpanded && (
-                            <ul className="pb-2 pl-3 space-y-1">
+                            <ul className="space-y-1 pb-2 pl-3">
                               {child.children!.map((sub) => (
                                 <li key={sub._id}>
                                   <a
                                     href={`/products?subsubcategory=${sub.name}`}
                                     onClick={onClose}
-                                    className="block px-2 py-1.5 text-sm text-[#4a443d] hover:text-[#171512] transition-colors"
+                                    className="block px-2 py-1.5 text-sm text-[#4a443d] transition-colors hover:text-[#171512]"
                                   >
                                     {sub.name}
                                   </a>
@@ -222,17 +201,21 @@ const MobileDrawer = ({
           })}
 
           <div className="border-b border-[#f0ebe4]">
-            <button className="flex w-full px-2 py-3.5 text-left text-sm italic font-medium text-[#171512]">
+            <button
+              type="button"
+              onClick={onSpecialClick}
+              className="flex w-full px-2 py-3.5 text-left text-sm font-medium italic text-[#171512]"
+            >
               Special
             </button>
           </div>
         </div>
 
-        <div className="border-t border-[#ddd6cc] px-6 py-5 flex items-center gap-5">
+        <div className="flex items-center gap-5 border-t border-[#ddd6cc] px-6 py-5">
           <Link
             href="/account"
             onClick={onClose}
-            className="flex items-center gap-1.5 text-xs uppercase tracking-widest text-[#171512] hover:text-[#9a9088] transition-colors font-sans"
+            className="flex items-center gap-1.5 font-sans text-xs uppercase tracking-widest text-[#171512] transition-colors hover:text-[#9a9088]"
           >
             <User size={15} strokeWidth={1.5} />
             <span>Account</span>
@@ -243,38 +226,32 @@ const MobileDrawer = ({
   );
 };
 
-// ─── Navbar ───────────────────────────────────────────────────────────────────
-
 const Navbar = () => {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [allCategories, setAllCategories] = useState<CategoryNode[]>([]);
-  const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(null);
+  const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(
+    null,
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isSpecialLoginOpen, setIsSpecialLoginOpen] = useState(false);
+  const [isSpecialLoginLoading, setIsSpecialLoginLoading] = useState(false);
+  const [specialLoginError, setSpecialLoginError] = useState("");
 
   const navRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const { isSpecialSession, specialUser } = useAuth();
+  const { isSpecialSession, loginAsSpecialUser } = useAuth();
   const { count, setCount } = useCartCount();
 
-  const visibleCategories =
-    isSpecialSession && specialUser?.allowedCategories.length
-      ? filterCategoryTree(allCategories, specialUser.allowedCategories)
-      : allCategories;
-
-  // ── Load categories ──────────────────────────────────────────────────────
   useEffect(() => {
-    void loadCategories();
+    void (async () => {
+      const response = await getAllCategories();
+      setAllCategories((response?.categories ?? []) as CategoryNode[]);
+    })();
   }, []);
 
-  const loadCategories = async () => {
-    const response = await getAllCategories();
-    setAllCategories((response?.categories ?? []) as CategoryNode[]);
-  };
-
-  // ── Seed cart count on mount so badge shows on every page ───────────────
   useEffect(() => {
     const user = getStoredUser();
     if (!user?.id) return;
@@ -284,14 +261,13 @@ const Navbar = () => {
         const response = await getCartItems();
         setCount(response.items?.length ?? 0);
       } catch {
-        // silently ignore — badge stays at whatever it was
+        return;
       }
     };
 
     void loadCount();
   }, [setCount]);
 
-  // ── Close mega menu / search on outside click ────────────────────────────
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(e.target as Node)) {
@@ -299,15 +275,17 @@ const Navbar = () => {
         setSearchOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
-    if (searchOpen) searchRef.current?.focus();
+    if (searchOpen) {
+      searchRef.current?.focus();
+    }
   }, [searchOpen]);
 
-  // ── Lock body scroll when mobile drawer is open ──────────────────────────
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => {
@@ -315,15 +293,14 @@ const Navbar = () => {
     };
   }, [mobileOpen]);
 
-  // ── Close mega menu if active category is no longer visible ─────────────
   useEffect(() => {
     if (
       activeCategory &&
-      !visibleCategories.find((c) => c._id === activeCategory._id)
+      !allCategories.find((category) => category._id === activeCategory._id)
     ) {
       setActiveCategory(null);
     }
-  }, [visibleCategories, activeCategory]);
+  }, [activeCategory, allCategories]);
 
   const handleCategoryClick = (category: CategoryNode) => {
     const hasChildren = (category.children?.length ?? 0) > 0;
@@ -331,40 +308,71 @@ const Navbar = () => {
       setActiveCategory(null);
       return;
     }
+
     setActiveCategory((prev) =>
       prev?._id === category._id ? null : category,
     );
+  };
+
+  const openSpecialAccess = () => {
+    setActiveCategory(null);
+    setMobileOpen(false);
+
+    if (isSpecialSession) {
+      router.push("/special");
+      return;
+    }
+
+    setSpecialLoginError("");
+    setIsSpecialLoginOpen(true);
+  };
+
+  const handleSpecialLogin = async (values: {
+    email: string;
+    password: string;
+  }) => {
+    try {
+      setIsSpecialLoginLoading(true);
+      setSpecialLoginError("");
+      await loginAsSpecialUser(values.email, values.password);
+      setIsSpecialLoginOpen(false);
+      router.push("/special");
+      router.refresh();
+    } catch (error) {
+      setSpecialLoginError(
+        error instanceof Error ? error.message : "Unable to sign in.",
+      );
+    } finally {
+      setIsSpecialLoginLoading(false);
+    }
   };
 
   return (
     <>
       <nav
         ref={navRef}
-        className="w-full relative bg-neutral border-b border-tertiary"
+        className="relative w-full border-b border-tertiary bg-neutral"
       >
-        <div className="flex items-center justify-between px-5 sm:px-8 md:px-14 py-4 gap-4">
-          {/* Hamburger */}
+        <div className="flex items-center justify-between gap-4 px-5 py-4 sm:px-8 md:px-14">
           <button
-            className="md:hidden text-primary hover:text-secondary transition-colors"
+            className="text-primary transition-colors hover:text-secondary md:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
           >
             <Menu size={20} strokeWidth={1.5} />
           </button>
 
-          {/* Logo */}
           <div className="shrink-0">
             <Link
               href="/"
-              className="text-lg sm:text-xl font-bold tracking-tight text-primary font-serif italic"
+              className="font-serif text-lg font-bold italic tracking-tight text-primary sm:text-xl"
             >
               The Fabric People
             </Link>
           </div>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-7">
-            {visibleCategories.map((category) => {
+          <div className="hidden items-center gap-7 md:flex">
+            {allCategories.map((category) => {
               const hasChildren = (category.children?.length ?? 0) > 0;
               const isActive = activeCategory?._id === category._id;
 
@@ -372,10 +380,10 @@ const Navbar = () => {
                 <button
                   key={category._id}
                   onClick={() => handleCategoryClick(category)}
-                  className={`flex items-center gap-1 text-md cursor-pointer font-sans italic font-medium transition-colors duration-150 pb-0.5 border-b-[1.5px] ${
+                  className={`flex items-center gap-1 border-b-[1.5px] pb-0.5 font-sans text-md font-medium italic transition-colors duration-150 ${
                     isActive
-                      ? "text-secondary border-secondary"
-                      : "text-primary border-transparent hover:text-secondary"
+                      ? "border-secondary text-secondary"
+                      : "border-transparent text-primary hover:text-secondary"
                   }`}
                 >
                   {category.name}
@@ -391,24 +399,19 @@ const Navbar = () => {
               );
             })}
 
-            {isSpecialSession ? (
-              <button
-                type="button"
-                className="text-md italic font-medium text-secondary font-sans border-b-[1.5px] border-secondary pb-0.5"
-              >
-                Special
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="text-md italic font-medium text-primary font-sans border-b-[1.5px] border-transparent pb-0.5"
-              >
-                Special
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={openSpecialAccess}
+              className={`border-b-[1.5px] pb-0.5 font-sans text-md font-medium italic ${
+                isSpecialSession
+                  ? "border-secondary text-secondary"
+                  : "border-transparent text-primary"
+              }`}
+            >
+              Special
+            </button>
           </div>
 
-          {/* Right icons */}
           <div className="flex items-center gap-3 sm:gap-5">
             <div className="flex items-center gap-2">
               {searchOpen && (
@@ -418,36 +421,33 @@ const Navbar = () => {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search fabrics..."
-                  className="text-sm outline-none bg-transparent border-b border-secondary w-28 sm:w-40 pb-0.5 text-primary placeholder-tertiary font-sans"
+                  className="w-28 border-b border-secondary bg-transparent pb-0.5 font-sans text-sm text-primary outline-none placeholder-tertiary sm:w-40"
                 />
               )}
               <button
                 onClick={() => setSearchOpen((v) => !v)}
-                className="flex items-center gap-1.5 text-xs uppercase tracking-widest text-primary hover:text-secondary transition-colors duration-150 font-sans"
+                className="flex items-center gap-1.5 font-sans text-xs uppercase tracking-widest text-primary transition-colors duration-150 hover:text-secondary"
               >
                 <Search size={15} strokeWidth={1.5} />
-                {!searchOpen && (
-                  <span className="hidden sm:inline">Search</span>
-                )}
+                {!searchOpen && <span className="hidden sm:inline">Search</span>}
               </button>
             </div>
 
             <Link
               href="/account"
-              className="hidden sm:flex items-center gap-1.5 text-xs uppercase tracking-widest text-primary hover:text-secondary transition-colors duration-150 font-sans"
+              className="hidden items-center gap-1.5 font-sans text-xs uppercase tracking-widest text-primary transition-colors duration-150 hover:text-secondary sm:flex"
             >
               <User size={15} strokeWidth={1.5} />
               <span className="hidden md:inline">Account</span>
             </Link>
 
-            {/* Cart icon with live count badge */}
             <button
               onClick={() => router.replace("/cart")}
-              className="text-primary relative cursor-pointer hover:text-secondary transition-colors duration-150"
+              className="relative cursor-pointer text-primary transition-colors duration-150 hover:text-secondary"
             >
               <ShoppingBag size={18} strokeWidth={1.5} />
               {count > 0 && (
-                <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
                   {count}
                 </span>
               )}
@@ -455,7 +455,6 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mega menu */}
         {activeCategory && (
           <MegaMenu
             category={activeCategory}
@@ -465,9 +464,21 @@ const Navbar = () => {
       </nav>
 
       <MobileDrawer
-        categories={visibleCategories}
+        categories={allCategories}
         isOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
+        onSpecialClick={openSpecialAccess}
+      />
+
+      <SpecialUserLoginModal
+        isOpen={isSpecialLoginOpen}
+        isLoading={isSpecialLoginLoading}
+        externalError={specialLoginError}
+        onClose={() => {
+          setIsSpecialLoginOpen(false);
+          setSpecialLoginError("");
+        }}
+        onSubmit={handleSpecialLogin}
       />
     </>
   );

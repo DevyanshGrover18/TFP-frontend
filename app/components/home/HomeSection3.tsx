@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/app/context/AuthContext";
-import { isProductAllowedForCategoryIds } from "@/app/services/catalogAccess";
+import { isProductVisibleForSession } from "@/app/services/catalogAccess";
 import {
   getAllProducts,
   getProductDisplayColor,
@@ -19,7 +19,7 @@ const HomeSection3 = () => {
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const { isSpecialSession, specialUser } = useAuth();
+  const { isSpecialSession } = useAuth();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -38,22 +38,14 @@ const HomeSection3 = () => {
     void fetchProducts();
   }, []);
 
-  const allowedCategoryIds = useMemo(
-    () =>
-      isSpecialSession && specialUser?.allowedCategories.length
-        ? new Set(specialUser.allowedCategories)
-        : null,
-    [isSpecialSession, specialUser],
-  );
-
   const visibleProducts = useMemo(
     () =>
       products
         .filter((product) =>
-          isProductAllowedForCategoryIds(product, allowedCategoryIds),
+          isProductVisibleForSession(product, isSpecialSession),
         )
         .slice(0, 6),
-    [products, allowedCategoryIds],
+    [isSpecialSession, products],
   );
 
   useEffect(() => {
@@ -127,6 +119,7 @@ const HomeSection3 = () => {
                 image={getProductPrimaryImage(activeProduct)}
                 href={getProductHref(activeProduct)}
                 badges={activeProduct.badges}
+                isSpecial={activeProduct.isSpecial}
                 category={activeProduct.categoryId}
                 details={{
                   sku: activeProduct.sku,

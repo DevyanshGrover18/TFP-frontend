@@ -16,6 +16,8 @@ type CatalogProductLike = {
   categoryId?: ProductCategoryRef;
   subCategoryId?: ProductCategoryRef;
   subSubCategoryId?: ProductCategoryRef;
+  isSpecial?: boolean;
+  badges?: string[];
 };
 
 export function filterCategoryTreeByAllowedIds(
@@ -58,6 +60,25 @@ export function isProductAllowedForCategoryIds(
     (subCategoryId && allowedIds.has(subCategoryId)) ||
     (subSubCategoryId && allowedIds.has(subSubCategoryId))
   );
+}
+
+export function isProductVisibleForSession(
+  product: CatalogProductLike,
+  isSpecialSession: boolean,
+) {
+  return !product.isSpecial || isSpecialSession;
+}
+
+export function sortSpecialProductsFirst<T extends CatalogProductLike>(
+  products: T[],
+) {
+  return [...products].sort((left, right) => {
+    if (left.isSpecial === right.isSpecial) {
+      return 0;
+    }
+
+    return left.isSpecial ? -1 : 1;
+  });
 }
 
 function getCategoryRefId(value: ProductCategoryRef) {

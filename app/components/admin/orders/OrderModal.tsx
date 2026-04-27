@@ -1,13 +1,14 @@
 "use client";
 
-import type { OrderRecord } from "@/app/services/orderService";
+import type { OrderRecord, OrderField } from "@/app/services/orderService";
 import { updateOrderStatus } from "@/app/services/orderService";
-import { X } from "lucide-react";
+import { X, Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 
 const ORDER_STATUSES = ["Pending", "Processing", "Completed", "Cancelled"] as const;
 type OrderStatus = (typeof ORDER_STATUSES)[number];
+
 
 type OrderModalProps = {
   isOpen: boolean;
@@ -60,12 +61,16 @@ export default function OrderModal({
     (order?.status as OrderStatus) ?? "Pending",
   );
   const [isUpdating, setIsUpdating] = useState(false);
+  const [fields, setFields] = useState<OrderField[]>([]);
+  const [isSavingFields, setIsSavingFields] = useState(false);
 
   useEffect(() => {
-  if (order?.status) {
-    setCurrentStatus(order.status as OrderStatus);
-  }
-}, [order?.id, order?.status]);
+    if (order?.status) {
+      setCurrentStatus(order.status as OrderStatus);
+    }
+    // Populate fields from order if they exist, otherwise start empty
+    setFields(order?.fields ?? []);
+  }, [order?.id, order?.status]);
 
   if (!isOpen || !order) {
     return null;
@@ -89,6 +94,44 @@ export default function OrderModal({
       );
     } finally {
       setIsUpdating(false);
+    }
+  }
+
+  function handleAddField() {
+    setFields((prev) => [...prev, { key: "", value: "" }]);
+  }
+
+  function handleFieldChange(
+    index: number,
+    prop: keyof OrderField,
+    val: string,
+  ) {
+    setFields((prev) =>
+      prev.map((f, i) => (i === index ? { ...f, [prop]: val } : f)),
+    );
+  }
+
+  function handleDeleteField(index: number) {
+    setFields((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleSaveFields() {
+    const hasEmpty = fields.some((f) => !f.key.trim() || !f.value.trim());
+    if (hasEmpty) {
+      toast.error("All fields must have both a key and a value");
+      return;
+    }
+
+    setIsSavingFields(true);
+    try {
+      await updateOrderStatus(order!.id, undefined, fields);
+      toast.success("Fields saved successfully");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save fields",
+      );
+    } finally {
+      setIsSavingFields(false);
     }
   }
 
@@ -133,11 +176,6 @@ export default function OrderModal({
                   </option>
                 ))}
               </select>
-              {/* {isUpdating && (
-                <span className="text-xs text-gray-400 animate-pulse">
-                  Saving…
-                </span>
-              )} */}
             </div>
           </div>
         </div>
@@ -168,7 +206,7 @@ export default function OrderModal({
                 </p>
                 <p>{invoice.category?.name || "No category"}</p>
                 <p>{invoice.website || "No website"}</p>
-                <p>{invoice.vatNumber || "No VAT number"}</p>
+                <p>{invoice.gstNumber || "No GST number"}</p>
               </div>
             </div>
           </div>
@@ -219,6 +257,7 @@ export default function OrderModal({
             />
           </div>
 
+          {/* Items table */}
           <div className="mt-6 overflow-hidden rounded-3xl border border-gray-200">
             <div className="border-b border-gray-100 px-5 py-4">
               <h4 className="text-sm font-semibold text-gray-900">
@@ -265,6 +304,86 @@ export default function OrderModal({
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Fields editor */}
+          <div className="mt-6 overflow-hidden rounded-3xl border border-gray-200">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <h4 className="text-sm font-semibold text-gray-900">
+                Additional fields
+              </h4>
+              <button
+                onClick={handleAddField}
+                className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                <Plus size={13} />
+                Add field
+              </button>
+            </div>
+
+            <div className="px-5 py-4">
+              {fields.length === 0 ? (
+                <p className="text-center text-sm text-gray-400 py-4">
+                  No fields added yet
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {/* Column labels */}
+                  <div className="grid grid-cols-[1fr_1fr_32px] gap-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
+                      Key
+                    </p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
+                      Value
+                    </p>
+                  </div>
+
+                  {fields.map((field, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-[1fr_1fr_32px] gap-3 items-center"
+                    >
+                      <input
+                        type="text"
+                        placeholder="e.g. Fabric type"
+                        value={field.key}
+                        onChange={(e) =>
+                          handleFieldChange(index, "key", e.target.value)
+                        }
+                        className="rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-800 outline-none placeholder:text-gray-300 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+                      />
+                      <input
+                        type="text"
+                        placeholder="e.g. Cotton"
+                        value={field.value}
+                        onChange={(e) =>
+                          handleFieldChange(index, "value", e.target.value)
+                        }
+                        className="rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-800 outline-none placeholder:text-gray-300 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+                      />
+                      <button
+                        onClick={() => handleDeleteField(index)}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 text-gray-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {fields.length > 0 && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={handleSaveFields}
+                    disabled={isSavingFields}
+                    className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSavingFields ? "Saving…" : "Save fields"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

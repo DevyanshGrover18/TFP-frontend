@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCartCount } from "@/app/context/CartCountContext";
-
+import { useAuth } from "@/app/context/AuthContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -114,7 +114,7 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { setCount } = useCartCount();
-
+  const { isSpecialSession } = useAuth();
 
   const [activeImage, setActiveImage] = useState(
     product.media?.mainImage || product.image || allImages[0] || "",
@@ -126,6 +126,12 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
     product.media?.gallery ?? [],
   );
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+  useEffect(() => {
+    if (product.isSpecial && !isSpecialSession) {
+      router.replace("/");
+    }
+  }, [isSpecialSession, product.isSpecial, router]);
 
   useEffect(() => {
     const oldList: ProductRecord[] = JSON.parse(
@@ -140,38 +146,42 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
     variantOptions.find((variant) => variant.id === activeVariantId) ??
     variantOptions[0];
 
-const handleAddToCart = async () => {
-  if (isSoldOut) {
-    toast.error("This product is sold out.");
-    return;
+  if (product.isSpecial && !isSpecialSession) {
+    return null;
   }
 
-  const user = getStoredUser();
+  const handleAddToCart = async () => {
+    if (isSoldOut) {
+      toast.error("This product is sold out.");
+      return;
+    }
 
-  if (!user?.id) {
-    toast.error("Please sign in to add items to your cart.");
-    router.push(buildLoginRedirectPath(pathname));
-    return;
-  }
+    const user = getStoredUser();
 
-  try {
-    setIsAddingToCart(true);
+    if (!user?.id) {
+      toast.error("Please sign in to add items to your cart.");
+      router.push(buildLoginRedirectPath(pathname));
+      return;
+    }
 
-    const response = await addCartItem({
-      productId: product._id,
-      variantId: selectedVariant?.variantId ?? null,
-    });
+    try {
+      setIsAddingToCart(true);
 
-    toast.success(response.message ?? "Item added to cart");
-    setCount((prev) => prev + 1); // ← increment badge instantly
-  } catch (error) {
-    toast.error(
-      error instanceof Error ? error.message : "Unable to add item to cart.",
-    );
-  } finally {
-    setIsAddingToCart(false);
-  }
-};
+      const response = await addCartItem({
+        productId: product._id,
+        variantId: selectedVariant?.variantId ?? null,
+      });
+
+      toast.success(response.message ?? "Item added to cart");
+      setCount((prev) => prev + 1); // ← increment badge instantly
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to add item to cart.",
+      );
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
   return (
     <div
       className="bg-neutral text-[#171512] min-h-screen"
