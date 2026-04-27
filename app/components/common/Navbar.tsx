@@ -6,6 +6,9 @@ import { Search, User, ShoppingBag, ChevronDown, Menu, X } from "lucide-react";
 import { getAllCategories } from "@/app/services/categoriesService";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import { useCartCount } from "@/app/context/CartCountContext";
+import { getCartItems } from "@/app/services/cartService";
+import { getStoredUser } from "@/app/services/userSession";
 
 type CategoryNode = {
   _id: string;
@@ -18,8 +21,6 @@ type CategoryNode = {
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-// Recursively filter the category tree to only include nodes whose _id
-// is in allowedIds, keeping parent nodes that have at least one allowed child.
 function filterCategoryTree(
   nodes: CategoryNode[],
   allowedIds: string[],
@@ -27,10 +28,8 @@ function filterCategoryTree(
   const allowed = new Set(allowedIds);
 
   function walk(node: CategoryNode): CategoryNode | null {
-    // If this node itself is allowed, keep it with all its children
     if (allowed.has(node._id)) return node;
 
-    // Otherwise recurse into children
     if (node.children && node.children.length > 0) {
       const filteredChildren = node.children
         .map(walk)
@@ -250,9 +249,7 @@ const Navbar = () => {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [allCategories, setAllCategories] = useState<CategoryNode[]>([]);
-  const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(
-    null,
-  );
+  const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navRef = useRef<HTMLElement>(null);
@@ -260,13 +257,14 @@ const Navbar = () => {
   const router = useRouter();
 
   const { isSpecialSession, specialUser } = useAuth();
+  const { count, setCount } = useCartCount();
 
-  // Visible categories — filtered for special session, full list otherwise
   const visibleCategories =
     isSpecialSession && specialUser?.allowedCategories.length
       ? filterCategoryTree(allCategories, specialUser.allowedCategories)
       : allCategories;
 
+  // ── Load categories ──────────────────────────────────────────────────────
   useEffect(() => {
     void loadCategories();
   }, []);
@@ -276,6 +274,24 @@ const Navbar = () => {
     setAllCategories((response?.categories ?? []) as CategoryNode[]);
   };
 
+  // ── Seed cart count on mount so badge shows on every page ───────────────
+  useEffect(() => {
+    const user = getStoredUser();
+    if (!user?.id) return;
+
+    const loadCount = async () => {
+      try {
+        const response = await getCartItems();
+        setCount(response.items?.length ?? 0);
+      } catch {
+        // silently ignore — badge stays at whatever it was
+      }
+    };
+
+    void loadCount();
+  }, [setCount]);
+
+  // ── Close mega menu / search on outside click ────────────────────────────
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(e.target as Node)) {
@@ -291,6 +307,7 @@ const Navbar = () => {
     if (searchOpen) searchRef.current?.focus();
   }, [searchOpen]);
 
+  // ── Lock body scroll when mobile drawer is open ──────────────────────────
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => {
@@ -298,7 +315,7 @@ const Navbar = () => {
     };
   }, [mobileOpen]);
 
-  // Close active mega menu if it's no longer in visible categories after login
+  // ── Close mega menu if active category is no longer visible ─────────────
   useEffect(() => {
     if (
       activeCategory &&
@@ -374,7 +391,6 @@ const Navbar = () => {
               );
             })}
 
-            {/* Special button — opens modal if not logged in, logs out if active */}
             {isSpecialSession ? (
               <button
                 type="button"
@@ -424,11 +440,17 @@ const Navbar = () => {
               <span className="hidden md:inline">Account</span>
             </Link>
 
+            {/* Cart icon with live count badge */}
             <button
               onClick={() => router.replace("/cart")}
-              className="text-primary cursor-pointer hover:text-secondary transition-colors duration-150"
+              className="text-primary relative cursor-pointer hover:text-secondary transition-colors duration-150"
             >
               <ShoppingBag size={18} strokeWidth={1.5} />
+              {count > 0 && (
+                <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {count}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -441,6 +463,7 @@ const Navbar = () => {
           />
         )}
       </nav>
+
       <MobileDrawer
         categories={visibleCategories}
         isOpen={mobileOpen}

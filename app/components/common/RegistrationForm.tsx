@@ -39,6 +39,8 @@ const CATEGORIES = [
   "Other",
 ];
 
+const EMPTY_CATEGORY = { id: "", name: "" };
+
 const emptyForm: FormData = {
   invoice: {
     companyName: "",
@@ -51,7 +53,7 @@ const emptyForm: FormData = {
     notLiableForVat: false,
     vatNumber: "",
     chamberOfCommerce: "",
-    category: "",
+    category: EMPTY_CATEGORY,
     website: "",
   },
   shipping: {
@@ -331,7 +333,7 @@ export default function RegistrationForm() {
       if (!form.invoice.notLiableForVat && !form.invoice.vatNumber.trim()) {
         nextErrors.vatNumber = "VAT number is required";
       }
-      if (!form.invoice.category) nextErrors.category = "Category is required";
+      if (!form.invoice.category.name) nextErrors.category = "Category is required";
     }
 
     if (currentStep === 1 && !form.shipping.sameAsInvoice) {
@@ -636,9 +638,14 @@ export default function RegistrationForm() {
                   Category <span className="text-red-500">*</span>
                 </span>
                 <select
-                  value={form.invoice.category}
+                  value={form.invoice.category.name}
                   onChange={(event) =>
-                    setInvoice({ category: event.target.value })
+                    setInvoice({
+                      category: {
+                        id: event.target.value.toLowerCase().replace(/\s+/g, "-"),
+                        name: event.target.value,
+                      },
+                    })
                   }
                   disabled={isLoadingProfile}
                   className={`${selectClass} ${errors.category ? "border-red-400" : ""}`}

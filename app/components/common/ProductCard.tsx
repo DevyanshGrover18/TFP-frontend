@@ -1,12 +1,14 @@
 import React from "react";
 import Link from "next/link";
+import type { ProductCategoryRef } from "@/app/services/productsService";
 
 type ProductCardProps = {
   name: string;
   image: string;
   href?: string;
-  category?: string;
+  category?: string | ProductCategoryRef;
   badge?: string;
+  badges?: string[];
   price?: string;
   priceUnit?: string;
   priceType?: string;
@@ -25,6 +27,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   image,
   href,
   badge,
+  badges,
   price,
   priceUnit = "yard",
   priceType = "Wholesale",
@@ -37,6 +40,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     { label: "Width", value: details?.width },
     { label: "Weight", value: details?.weight },
   ].filter((detail) => detail.value);
+  const visibleBadges =
+    badges?.filter(Boolean).length ? badges.filter(Boolean) : badge ? [badge] : [];
 
   const content = (
     <>
@@ -47,13 +52,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
           className="aspect-3/4 w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
 
-        {badge && (
-          <span
-            className="absolute -left-10 top-6 bg-red-500 text-white w-40 -rotate-45 text-center px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide"
-          >
-            {badge}
-          </span>
-        )}
+        {visibleBadges.length ? (
+          <div className="absolute -rotate-45 -left-14 top-6 z-10 flex max-w-[70%] flex-wrap gap-2">
+            {visibleBadges.map((item) => (
+              <span
+                key={item}
+                className="w-72 text-center bg-red-500 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        ) : null}
 
         {detailRows.length > 0 && (
           <div

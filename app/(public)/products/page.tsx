@@ -30,7 +30,7 @@ type FiltersState = {
   specifications: ProductFilterGroup[];
 };
 
-type ProductRef = string | { _id: string; name: string };
+type ProductRef = string | { _id?: string; id?: string; name?: string };
 
 const EMPTY_FILTERS: FiltersState = {
   categories: [],
@@ -52,7 +52,7 @@ const getSelectedValues = (searchParams: URLSearchParams, key: string) =>
   Array.from(new Set(searchParams.getAll(key).filter(Boolean)));
 
 const getProductRefId = (value: ProductRef | undefined) =>
-  typeof value === "string" ? value : value?._id;
+  typeof value === "string" ? value : value?._id ?? value?.id;
 
 const matchesMultiValueFilter = (
   selectedValues: string[],
@@ -62,7 +62,7 @@ const matchesMultiValueFilter = (
   return candidate ? selectedValues.includes(candidate) : false;
 };
 
-// ─── Sidebar filter section (unchanged) ──────────────────────────────────────
+// ─── Sidebar filter section ───────────────────────────────────────────────────
 
 function SidebarFilterSection({
   title,
@@ -123,6 +123,111 @@ function SidebarFilterSection({
   );
 }
 
+// ─── Sidebar content (shared between desktop & mobile drawer) ─────────────────
+
+function SidebarContent({
+  selectedCategories,
+  selectedSubCategories,
+  selectedSubSubCategories,
+  selectedSpecificationFilters,
+  categoryOptions,
+  subCategoryOptions,
+  subSubCategoryOptions,
+  sidebarSpecificationGroups,
+  hasActiveFilters,
+  toggleFilter,
+  onClearFilters,
+}: {
+  selectedCategories: string[];
+  selectedSubCategories: string[];
+  selectedSubSubCategories: string[];
+  selectedSpecificationFilters: Record<string, string[]>;
+  categoryOptions: ProductFilterOption[];
+  subCategoryOptions: ProductFilterOption[];
+  subSubCategoryOptions: ProductFilterOption[];
+  sidebarSpecificationGroups: SidebarFilterGroup[];
+  hasActiveFilters: boolean;
+  toggleFilter: (paramKey: string, value: string) => void;
+  onClearFilters?: () => void;
+}) {
+  return (
+    <>
+      <SidebarFilterSection
+        title="Categories"
+        paramKey={CATEGORY_PARAM}
+        activeValues={selectedCategories}
+        options={categoryOptions}
+        onToggle={toggleFilter}
+      />
+
+      {selectedCategories.length > 0 && (
+        <SidebarFilterSection
+          title="Sub Categories"
+          paramKey={SUB_CATEGORY_PARAM}
+          activeValues={selectedSubCategories}
+          options={subCategoryOptions}
+          onToggle={toggleFilter}
+        />
+      )}
+
+      {selectedSubCategories.length > 0 && (
+        <SidebarFilterSection
+          title="Sub Sub Categories"
+          paramKey={SUB_SUB_CATEGORY_PARAM}
+          activeValues={selectedSubSubCategories}
+          options={subSubCategoryOptions}
+          onToggle={toggleFilter}
+        />
+      )}
+
+      {sidebarSpecificationGroups.map((group) => (
+        <SidebarFilterSection
+          key={group.key}
+          title={formatFilterLabel(group.label)}
+          paramKey={group.key}
+          activeValues={selectedSpecificationFilters[group.key] ?? []}
+          options={group.values}
+          onToggle={toggleFilter}
+        />
+      ))}
+
+      {hasActiveFilters && onClearFilters && (
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="block w-full rounded-2xl border border-stone-200 py-3 text-center text-xs font-semibold uppercase tracking-widest text-stone-600 hover:bg-stone-50 transition-colors"
+          >
+            Clear all filters
+          </button>
+        </div>
+      )}
+
+      <div className="mt-8 rounded-[1.5rem] bg-stone-900 px-5 py-6 text-white">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/60">
+          Trade Support
+        </p>
+        <p
+          className="mt-3 text-2xl italic"
+          style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+        >
+          Need help sourcing?
+        </p>
+        <p className="mt-3 text-sm leading-6 text-white/70">
+          Start with the live catalog filters, then reach out for custom
+          sourcing and bulk requirements.
+        </p>
+        <button
+          type="button"
+          className="mt-5 rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-900"
+        >
+          Contact Studio
+        </button>
+      </div>
+    </>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const ProductsPageDetails = () => {
@@ -130,6 +235,7 @@ const ProductsPageDetails = () => {
   const [filters, setFilters] = useState<FiltersState>(EMPTY_FILTERS);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -139,7 +245,7 @@ const ProductsPageDetails = () => {
     () =>
       isSpecialSession && specialUser?.allowedCategories.length
         ? new Set(specialUser.allowedCategories)
-        : null, // null means no restriction
+        : null,
     [isSpecialSession, specialUser],
   );
 
@@ -191,9 +297,24 @@ const ProductsPageDetails = () => {
     void fetchPageData();
   }, []);
 
+  // Close sidebar on route change (filter toggle navigates)
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [searchParams]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isSidebarOpen]);
+
   // ── Products scoped to special session ───────────────────────────────────
-  // If allowedCategoryIds is set, only keep products whose categoryId,
-  // subCategoryId, OR subSubCategoryId is in the allowed set.
   const scopedProducts = useMemo(() => {
     if (!allowedCategoryIds) return products;
 
@@ -212,7 +333,7 @@ const ProductsPageDetails = () => {
     });
   }, [products, allowedCategoryIds]);
 
-  // ── Scoped filters (only show filter options present in scopedProducts) ──
+  // ── Scoped filters ───────────────────────────────────────────────────────
   const scopedFilters = useMemo<FiltersState>(() => {
     if (!allowedCategoryIds) return filters;
 
@@ -245,9 +366,6 @@ const ProductsPageDetails = () => {
       specifications: filters.specifications,
     };
   }, [filters, scopedProducts, allowedCategoryIds]);
-
-  // All downstream logic now uses scopedProducts + scopedFilters
-  // instead of products + filters directly.
 
   const visibleSubCategories = useMemo(() => {
     if (!selectedCategories.length) return [];
@@ -493,6 +611,12 @@ const ProductsPageDetails = () => {
     selectedSubSubCategories.length > 0 ||
     Object.keys(selectedSpecificationFilters).length > 0;
 
+  const activeFilterCount =
+    selectedCategories.length +
+    selectedSubCategories.length +
+    selectedSubSubCategories.length +
+    Object.keys(selectedSpecificationFilters).length;
+
   const toggleFilter = (paramKey: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     const currentValues = getSelectedValues(params, paramKey);
@@ -558,6 +682,23 @@ const ProductsPageDetails = () => {
     router.replace(query ? `/products?${query}` : "/products");
   };
 
+  const handleClearFilters = () => {
+    router.replace("/products");
+  };
+
+  const sharedSidebarProps = {
+    selectedCategories,
+    selectedSubCategories,
+    selectedSubSubCategories,
+    selectedSpecificationFilters,
+    categoryOptions,
+    subCategoryOptions,
+    subSubCategoryOptions,
+    sidebarSpecificationGroups,
+    hasActiveFilters,
+    toggleFilter,
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-[#f6f2ea] text-stone-900">
       {isSpecialSession && (
@@ -573,8 +714,93 @@ const ProductsPageDetails = () => {
       <main className="flex-1 pb-16 pt-4">
         <section className="mt-8 px-4 sm:px-6 lg:px-10">
           <div className="mx-auto max-w-7xl">
+
+            {/* ── Mobile filter toggle bar ──────────────────────────────── */}
+            <div className="mb-4 flex items-center justify-between lg:hidden">
+              <p className="text-sm font-semibold uppercase tracking-widest text-stone-500">
+                {filteredProducts.length}{" "}
+                {filteredProducts.length === 1 ? "product" : "products"}
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
+                className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-700 shadow-sm active:bg-stone-100 transition-colors"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 4h18M6 8h12M9 12h6"
+                  />
+                </svg>
+                Filters
+                {hasActiveFilters && (
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-stone-900 text-[10px] text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* ── Mobile sidebar drawer ─────────────────────────────────── */}
+            {isSidebarOpen && (
+              <div className="fixed inset-0 z-50 lg:hidden">
+                {/* Backdrop */}
+                <div
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  onClick={() => setIsSidebarOpen(false)}
+                />
+                {/* Bottom sheet */}
+                <aside className="absolute bottom-0 left-0 right-0 max-h-[88vh] overflow-y-auto rounded-t-[2rem] bg-white shadow-2xl">
+                  {/* Handle bar */}
+                  <div className="flex justify-center pt-3 pb-1">
+                    <div className="h-1 w-10 rounded-full bg-stone-200" />
+                  </div>
+
+                  <div className="px-6 pb-10">
+                    <div className="flex items-center justify-between py-4 border-b border-stone-100">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
+                          Catalog Filters
+                        </p>
+                        <h2
+                          className="mt-1 text-2xl italic text-stone-900"
+                          style={{
+                            fontFamily: "'Georgia', 'Times New Roman', serif",
+                          }}
+                        >
+                          Refined selection
+                        </h2>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="rounded-full bg-stone-100 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-700 hover:bg-stone-200 transition-colors"
+                      >
+                        Done
+                      </button>
+                    </div>
+
+                    <SidebarContent
+                      {...sharedSidebarProps}
+                      onClearFilters={handleClearFilters}
+                    />
+                  </div>
+                </aside>
+              </div>
+            )}
+
+            {/* ── Main grid ────────────────────────────────────────────── */}
             <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-              <aside className="h-fit rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm lg:sticky lg:top-28">
+
+              {/* Desktop sidebar — hidden on mobile */}
+              <aside className="hidden h-fit rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm lg:block lg:sticky lg:top-28">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
                     Catalog Filters
@@ -594,70 +820,10 @@ const ProductsPageDetails = () => {
                   </p>
                 </div>
 
-                <SidebarFilterSection
-                  title="Categories"
-                  paramKey={CATEGORY_PARAM}
-                  activeValues={selectedCategories}
-                  options={categoryOptions}
-                  onToggle={toggleFilter}
-                />
-
-                {selectedCategories.length > 0 && (
-                  <SidebarFilterSection
-                    title="Sub Categories"
-                    paramKey={SUB_CATEGORY_PARAM}
-                    activeValues={selectedSubCategories}
-                    options={subCategoryOptions}
-                    onToggle={toggleFilter}
-                  />
-                )}
-
-                {selectedSubCategories.length > 0 && (
-                  <SidebarFilterSection
-                    title="Sub Sub Categories"
-                    paramKey={SUB_SUB_CATEGORY_PARAM}
-                    activeValues={selectedSubSubCategories}
-                    options={subSubCategoryOptions}
-                    onToggle={toggleFilter}
-                  />
-                )}
-
-                {sidebarSpecificationGroups.map((group) => (
-                  <SidebarFilterSection
-                    key={group.key}
-                    title={formatFilterLabel(group.label)}
-                    paramKey={group.key}
-                    activeValues={selectedSpecificationFilters[group.key] ?? []}
-                    options={group.values}
-                    onToggle={toggleFilter}
-                  />
-                ))}
-
-                <div className="mt-8 rounded-[1.5rem] bg-stone-900 px-5 py-6 text-white">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/60">
-                    Trade Support
-                  </p>
-                  <p
-                    className="mt-3 text-2xl italic"
-                    style={{
-                      fontFamily: "'Georgia', 'Times New Roman', serif",
-                    }}
-                  >
-                    Need help sourcing?
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-white/70">
-                    Start with the live catalog filters, then reach out for
-                    custom sourcing and bulk requirements.
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-5 rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-900"
-                  >
-                    Contact Studio
-                  </button>
-                </div>
+                <SidebarContent {...sharedSidebarProps} />
               </aside>
 
+              {/* ── Product grid ──────────────────────────────────────── */}
               <div>
                 <div className="mb-6 flex flex-col gap-4 rounded-[2rem] border border-stone-200 bg-white px-5 py-5 shadow-sm sm:flex-row sm:items-end sm:justify-between sm:px-6">
                   <div>
@@ -665,7 +831,7 @@ const ProductsPageDetails = () => {
                       Live Inventory
                     </p>
                     <h2
-                      className="mt-2 text-3xl italic text-stone-900"
+                      className="mt-2 text-2xl italic text-stone-900 sm:text-3xl"
                       style={{
                         fontFamily: "'Georgia', 'Times New Roman', serif",
                       }}
@@ -705,14 +871,14 @@ const ProductsPageDetails = () => {
                     Loading products...
                   </div>
                 ) : filteredProducts.length ? (
-                  <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-10 xl:grid-cols-3">
                     {filteredProducts.map((product) => (
                       <ProductCard
                         key={product._id}
                         name={product.name}
                         image={getProductPrimaryImage(product)}
                         href={getProductHref(product)}
-                        badge={product.isNew ? "New" : undefined} // ← add this
+                        badges={product.badges}
                         details={{
                           sku: product.sku,
                           composition: getProductSpecification(

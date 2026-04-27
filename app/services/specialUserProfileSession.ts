@@ -6,6 +6,24 @@ const SPECIAL_USER_PROFILE_STORAGE_KEY = "tfp-special-user-profiles";
 
 type StoredSpecialProfiles = Record<string, UserQuoteProfile>;
 
+function normalizeProfile(profile: UserQuoteProfile): UserQuoteProfile {
+  const category = profile?.invoice?.category;
+
+  return {
+    ...profile,
+    invoice: {
+      ...profile.invoice,
+      category:
+        typeof category === "string"
+          ? { id: "", name: category }
+          : {
+              id: category?.id ?? "",
+              name: category?.name ?? "",
+            },
+    },
+  };
+}
+
 function readProfiles(): StoredSpecialProfiles {
   if (typeof window === "undefined") {
     return {};
@@ -38,7 +56,8 @@ function writeProfiles(profiles: StoredSpecialProfiles) {
 }
 
 export function getStoredSpecialUserProfile(specialUserId: string) {
-  return readProfiles()[specialUserId] ?? null;
+  const profile = readProfiles()[specialUserId];
+  return profile ? normalizeProfile(profile) : null;
 }
 
 export function storeSpecialUserProfile(
@@ -46,6 +65,6 @@ export function storeSpecialUserProfile(
   profile: UserQuoteProfile,
 ) {
   const profiles = readProfiles();
-  profiles[specialUserId] = profile;
+  profiles[specialUserId] = normalizeProfile(profile);
   writeProfiles(profiles);
 }

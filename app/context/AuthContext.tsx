@@ -33,6 +33,7 @@ type AuthState = {
 };
 
 type AuthContextValue = AuthState & {
+  signupAsUser: (name: string, email: string, password: string) => Promise<void>;
   loginAsSpecialUser: (email: string, password: string) => Promise<void>;
   loginAsUser: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -118,6 +119,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [state.sessionType],
   );
 
+  const signupAsUser = useCallback(
+    async (name: string, email: string, password: string) => {
+      if (state.sessionType === "special") {
+        await fetchApi("/special-users/logout", {
+          method: "GET",
+          onUnauthorizedRedirectTo: null,
+        }).catch(() => null);
+      }
+
+      const data = await fetchApi<{
+        success: boolean;
+        message?: string;
+        user?: AuthUser;
+      }>("/user/auth/signup", {
+        method: "POST",
+        body: JSON.stringify({ name, email, password }),
+        onUnauthorizedRedirectTo: null,
+      });
+
+      if (!data.success || !data.user) {
+        throw new Error(data.message ?? "Signup failed");
+      }
+
+      const next: AuthState = {
+        sessionType: "user",
+        user: data.user,
+        specialUser: null,
+      };
+
+      storeUser(data.user);
+      setState(next);
+      writeSession(next);
+    },
+    [state.sessionType],
+  );
+
   const loginAsUser = useCallback(async (email: string, password: string) => {
     // If a special session is active, clear it first
     if (state.sessionType === "special") {
@@ -174,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         ...state,
+        signupAsUser,
         loginAsSpecialUser,
         loginAsUser,
         logout,

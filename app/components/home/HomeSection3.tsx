@@ -126,7 +126,7 @@ const HomeSection3 = () => {
                 name={activeProduct.name}
                 image={getProductPrimaryImage(activeProduct)}
                 href={getProductHref(activeProduct)}
-                badge={activeProduct.isNew ? "New" : undefined}
+                badges={activeProduct.badges}
                 category={activeProduct.categoryId}
                 details={{
                   sku: activeProduct.sku,

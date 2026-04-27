@@ -113,7 +113,7 @@ const HomeCards = () => {
                 name={product.name}
                 image={getProductPrimaryImage(product)}
                 href={getProductHref(product)}
-                badge={product.isNew ? "New" : undefined}
+                badges={product.badges}
                 details={{
                   sku: product.sku,
                   composition: getProductSpecification(product, "composition"),

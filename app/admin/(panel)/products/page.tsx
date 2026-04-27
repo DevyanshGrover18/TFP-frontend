@@ -3,11 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
+import BadgesModal from "@/app/components/admin/products/BadgesModal";
 import DeleteModal from "@/app/components/common/DeleteModal";
 import ProductModal, {
   type CategoryNode,
   type ProductFormValues,
 } from "@/app/components/admin/products/ProductModal";
+import {
+  createBadge,
+  deleteBadge as deleteBadgeRecord,
+  getAllBadges,
+  type BadgeRecord,
+} from "@/app/services/badgesService";
 import { getAllCategories } from "@/app/services/categoriesService";
 import {
   createProduct,
@@ -22,6 +29,8 @@ type ProductModalState = {
   product: ProductRecord | null;
 };
 
+const RESERVED_BADGE_NAMES = new Set(["New", "Sold Out"]);
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [categories, setCategories] = useState<CategoryNode[]>([]);
@@ -35,6 +44,10 @@ export default function ProductsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ProductRecord | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [badges, setBadges] = useState<BadgeRecord[]>([]);
+  const [isBadgesModalOpen, setIsBadgesModalOpen] = useState(false);
+  const [isSavingBadge, setIsSavingBadge] = useState(false);
+  const [deletingBadgeId, setDeletingBadgeId] = useState<string | null>(null);
 
   const loadProducts = async (silent = false) => {
     if (silent) {
@@ -73,11 +86,16 @@ export default function ProductsPage() {
     setCategories(data.categories ?? []);
   };
 
+  const loadBadges = async () => {
+    const data = await getAllBadges();
+    setBadges(data.badges ?? []);
+  };
+
   useEffect(() => {
     const loadInitialData = async () => {
       setIsLoading(true);
       try {
-        await Promise.all([loadCategories(), loadProducts()]);
+        await Promise.all([loadCategories(), loadProducts(), loadBadges()]);
       } catch (initialError) {
         toast.error(
           initialError instanceof Error
@@ -123,6 +141,7 @@ export default function ProductsPage() {
       description: modalState.product.description,
       specifications: modalState.product.specifications,
       media: modalState.product.media,
+      badges: modalState.product.badges,
       variants: modalState.product.variants,
     };
   }, [modalState.product]);
@@ -174,6 +193,51 @@ export default function ProductsPage() {
     }
   };
 
+  const handleCreateBadge = async (name: string) => {
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+      toast.error("Badge name is required");
+      return;
+    }
+
+    setIsSavingBadge(true);
+
+    try {
+      await createBadge(trimmedName);
+      toast.success("Badge created successfully");
+      await loadBadges();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create badge",
+      );
+    } finally {
+      setIsSavingBadge(false);
+    }
+  };
+
+  const handleDeleteBadge = async (badge: BadgeRecord) => {
+    if (RESERVED_BADGE_NAMES.has(badge.name)) {
+      toast.error("Reserved badges cannot be deleted");
+      return;
+    }
+
+    setDeletingBadgeId(badge.id);
+
+    try {
+      await deleteBadgeRecord(badge.id);
+      toast.success("Badge deleted successfully");
+      await Promise.all([loadBadges(), loadProducts(true)]);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete badge",
+      );
+    } finally {
+      setDeletingBadgeId(null);
+    }
+  };
+
+
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
@@ -196,6 +260,20 @@ export default function ProductsPage() {
           Add product
         </button>
       </div>
+
+      <div className="flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+        <h2 className="text-sm font-semibold text-gray-900">
+          Total Badges: {badges.length}
+        </h2>
+        <button
+          type="button"
+          onClick={() => setIsBadgesModalOpen(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700"
+        >
+          Customise Badges
+        </button>
+      </div>
+
       <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <h2 className="text-sm font-semibold text-gray-900">All products</h2>
@@ -242,9 +320,9 @@ export default function ProductsPage() {
                     <td className="px-5 py-4 text-gray-600">{product.colorCode}</td>
                     <td className="px-5 py-4 text-gray-600">
                       {[
-                        product.categoryId,
-                        product.subCategoryId,
-                        product.subSubCategoryId,
+                        product.categoryId.name,
+                        product.subCategoryId.name,
+                        product.subSubCategoryId.name,
                       ]
                         .filter(Boolean)
                         .join(" / ")}
@@ -287,11 +365,22 @@ export default function ProductsPage() {
         isOpen={isModalOpen}
         mode={modalState.mode}
         categories={categories}
+        badges={badges}
         initialValues={initialValues}
         productId={modalState.product?.productId}
         isLoading={isSubmitting}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSaveProduct}
+      />
+
+      <BadgesModal
+        isOpen={isBadgesModalOpen}
+        badges={badges}
+        isSaving={isSavingBadge}
+        isDeletingId={deletingBadgeId}
+        onClose={() => setIsBadgesModalOpen(false)}
+        onCreate={handleCreateBadge}
+        onDelete={handleDeleteBadge}
       />
 
       <DeleteModal

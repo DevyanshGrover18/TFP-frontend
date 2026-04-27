@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useAuth } from "@/app/context/AuthContext";
+import { buildLoginRedirectPath } from "@/app/services/authRedirect";
 import { getMyOrders, type OrderRecord } from "@/app/services/orderService";
 import {
   getCurrentUserProfile,
@@ -29,7 +30,7 @@ const emptyProfile: UserQuoteProfile = {
     notLiableForVat: false,
     vatNumber: "",
     chamberOfCommerce: "",
-    category: "",
+    category: { id: "", name: "" },
     website: "",
   },
   shipping: {
@@ -110,6 +111,7 @@ function hasProfileDetails(profile: UserQuoteProfile) {
 
 export default function AccountPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, specialUser, isSpecialSession, logout } = useAuth();
   const [profile, setProfile] = useState<UserQuoteProfile>(emptyProfile);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
@@ -198,7 +200,7 @@ export default function AccountPage() {
 
   const setInvoice = (
     field: keyof UserQuoteProfile["invoice"],
-    value: string | boolean,
+    value: string | boolean | UserQuoteProfile["invoice"]["category"],
   ) => {
     setProfile((current) => ({
       ...current,
@@ -305,7 +307,7 @@ export default function AccountPage() {
             activity.
           </p>
           <Link
-            href="/login"
+            href={buildLoginRedirectPath(pathname)}
             className="mt-8 inline-flex rounded-md bg-[#01010f] px-6 py-3 text-xs font-bold uppercase tracking-[0.24em] text-white transition hover:bg-primary"
           >
             Sign In
@@ -475,9 +477,12 @@ export default function AccountPage() {
                       <label className="space-y-2 text-sm font-medium text-[#47464c]">
                         <span>Category</span>
                         <input
-                          value={profile.invoice.category}
+                          value={profile.invoice.category.name}
                           onChange={(event) =>
-                            setInvoice("category", event.target.value)
+                            setInvoice("category", {
+                              id: event.target.value.toLowerCase().replace(/\s+/g, "-"),
+                              name: event.target.value,
+                            })
                           }
                           className="w-full rounded-2xl border border-[#ddd6cc] px-4 py-3 outline-none transition focus:border-[#171512]"
                         />

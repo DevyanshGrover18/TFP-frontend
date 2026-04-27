@@ -3,6 +3,7 @@ import { Manrope, Newsreader } from "next/font/google";
 import ToastProvider from "./components/common/ToastProvider";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
+import { CartCountProvider } from "./context/CartCountContext";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -31,8 +32,10 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-background text-foreground font-sans">
         <AuthProvider>
-          {children}
+          <CartCountProvider>
+            {children}
           <ToastProvider />
+          </CartCountProvider>
         </AuthProvider>
       </body>
     </html>

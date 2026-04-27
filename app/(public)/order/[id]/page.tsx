@@ -323,7 +323,7 @@ export default function OrderPage() {
                 {invoice.companyName && (
                   <p className="font-semibold text-[#01010f]">{invoice.companyName}</p>
                 )}
-                {invoice.category && <p>{invoice.category}</p>}
+                {invoice.category?.name && <p>{invoice.category.name}</p>}
                 {invoice.website && (
                   <p className="text-xs text-[#7a736c]">{invoice.website}</p>
                 )}

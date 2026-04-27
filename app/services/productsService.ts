@@ -1,12 +1,17 @@
 import { fetchApi } from "./api";
 
+export type ProductCategoryRef = {
+  id: string;
+  name: string;
+};
+
 export type ProductPayload = {
   sku: string;
   name: string;
   colorCode: string;
-  categoryId: string;
-  subCategoryId: string;
-  subSubCategoryId: string;
+  categoryId: ProductCategoryRef;
+  subCategoryId: ProductCategoryRef;
+  subSubCategoryId: ProductCategoryRef;
   description: string;
   specifications: Array<{
     key: string;
@@ -16,6 +21,7 @@ export type ProductPayload = {
     mainImage: string;
     gallery: string[];
   };
+  badges: string[];
   variants: Array<{
     id : string,
     sku : string,
@@ -35,9 +41,9 @@ export type ProductRecord = {
   name: string;
   image : string;
   colorCode: string;
-  categoryId: string;
-  subCategoryId: string;
-  subSubCategoryId: string;
+  categoryId: ProductCategoryRef;
+  subCategoryId: ProductCategoryRef;
+  subSubCategoryId: ProductCategoryRef;
   description: string;
   specifications: Array<{
     key: string;
@@ -47,6 +53,7 @@ export type ProductRecord = {
     mainImage: string;
     gallery: string[];
   };
+  badges: string[];
   variants: Array<{
     id: string,
     sku : string,
@@ -56,7 +63,7 @@ export type ProductRecord = {
     mainImage: string;
     gallery: string[];
   }>;
-    isNew?: boolean; 
+  isNew?: boolean;
 };
 
 export type ProductFilterOption = {
@@ -88,7 +95,7 @@ export function createProductSlug(name: string) {
   return name
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^a-z0-9]+/g, "%20")
     .replace(/^-+|-+$/g, "");
 }
 

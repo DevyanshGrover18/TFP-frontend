@@ -1,5 +1,10 @@
 import { fetchApi } from "./api";
 
+export type QuoteCategoryValue = {
+  id: string;
+  name: string;
+};
+
 export type UserRecord = {
   id: string;
   name: string;
@@ -18,7 +23,7 @@ export type QuoteInvoiceProfile = {
   notLiableForVat: boolean;
   vatNumber: string;
   chamberOfCommerce: string;
-  category: string;
+  category: QuoteCategoryValue;
   website: string;
 };
 

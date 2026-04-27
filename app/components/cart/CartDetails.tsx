@@ -2,14 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import {
   getCartItems,
   removeCartItem,
   type CartItemRecord,
 } from "@/app/services/cartService";
+import { buildLoginRedirectPath } from "@/app/services/authRedirect";
 import { getStoredUser } from "@/app/services/userSession";
+import { useCartCount } from "@/app/context/CartCountContext";
 
 type PendingState = Record<string, boolean>;
 
@@ -28,13 +30,16 @@ export default function CartDetails() {
   const [loadError, setLoadError] = useState("");
   const [pendingRows, setPendingRows] = useState<PendingState>({});
   const router = useRouter();
+  const pathname = usePathname();
+
+  const { setCount } = useCartCount();
 
   useEffect(() => {
     const user = getStoredUser();
 
     if (!user?.id) {
       setIsAuthorized(false);
-      router.replace("/login");
+      router.replace(buildLoginRedirectPath(pathname));
       return;
     }
     setIsAuthorized(true);
@@ -58,7 +63,9 @@ export default function CartDetails() {
   }, [router]);
 
   const totalItems = useMemo(() => items.length, [items]);
-
+  useEffect(() => {
+    setCount(totalItems);
+  }, [totalItems, setCount]);
 
   const setRowPending = (key: string, value: boolean) => {
     setPendingRows((prev) => ({ ...prev, [key]: value }));
@@ -124,7 +131,8 @@ export default function CartDetails() {
               No fabrics in your cart
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-[#47464c]">
-              Browse the catalogue and add fabric variants from any product page.
+              Browse the catalogue and add fabric variants from any product
+              page.
             </p>
             <Link
               href="/products"
@@ -173,7 +181,8 @@ export default function CartDetails() {
                                 <span
                                   className="block text-lg italic text-[#01010f]"
                                   style={{
-                                    fontFamily: "Georgia, 'Times New Roman', serif",
+                                    fontFamily:
+                                      "Georgia, 'Times New Roman', serif",
                                   }}
                                 >
                                   {item.name}
@@ -235,7 +244,9 @@ export default function CartDetails() {
                     </span>
                     <span
                       className="text-2xl text-[#01010f]"
-                      style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+                      style={{
+                        fontFamily: "Georgia, 'Times New Roman', serif",
+                      }}
                     >
                       {totalItems}
                     </span>
@@ -279,7 +290,9 @@ export default function CartDetails() {
                     <span className="text-[11px] uppercase tracking-widest text-[#47464c]">
                       Number of Items
                     </span>
-                    <span className="font-bold text-[#01010f]">{totalItems}</span>
+                    <span className="font-bold text-[#01010f]">
+                      {totalItems}
+                    </span>
                   </div>
                 </div>
 
@@ -288,16 +301,13 @@ export default function CartDetails() {
                     href="/order-form"
                     className="block w-full rounded-md bg-[#01010f] py-5 text-center text-[12px] font-bold uppercase tracking-[0.25em] text-white transition-all duration-300 hover:bg-primary active:scale-[0.98]"
                   >
-                    Proceed to Quote
+                    Request for sample
                   </Link>
-                  <button className="w-full rounded-md border border-[#c8c5cd] py-5 text-[12px] font-bold uppercase tracking-[0.25em] text-[#01010f] transition-all duration-300 hover:bg-white">
-                    Save as Draft
-                  </button>
                 </div>
 
                 <p className="mt-8 text-center text-[11px] italic leading-relaxed text-[#47464c]/70">
-                  * Final pricing and logistics will be confirmed in the generated
-                  formal quote within 24 business hours.
+                  * Final pricing and logistics will be confirmed in the
+                  generated formal quote within 24 business hours.
                 </p>
               </div>
             </aside>

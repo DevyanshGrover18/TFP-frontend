@@ -3,12 +3,14 @@
 import React, { useState, useMemo, useEffect } from "react";
 import type { ProductRecord } from "@/app/services/productsService";
 import RecentlyViewed from "./RecentlyViewed";
-import { getCategoryById } from "@/app/services/categoriesService";
 import { addCartItem } from "@/app/services/cartService";
+import { buildLoginRedirectPath } from "@/app/services/authRedirect";
 import { getStoredUser } from "@/app/services/userSession";
 import { toast } from "react-toastify";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useCartCount } from "@/app/context/CartCountContext";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,13 +23,6 @@ type VariantOption = {
   colorCode: string;
   mainImage: string;
   gallery: string[];
-};
-
-type Category = {
-  _id: string;
-  name: string;
-  parentId?: string;
-  level: number;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -111,7 +106,15 @@ const VariantCard = ({ variant, isSelected, onClick }: VariantCardProps) => (
 const ProductDetail = ({ product }: { product: ProductRecord }) => {
   const allImages = useMemo(() => getAllImages(product), [product]);
   const variantOptions = useMemo(() => buildVariantOptions(product), [product]);
+  const visibleBadges = useMemo(
+    () => (Array.isArray(product.badges) ? product.badges.filter(Boolean) : []),
+    [product.badges],
+  );
+  const isSoldOut = visibleBadges.includes("Sold Out");
   const router = useRouter();
+  const pathname = usePathname();
+  const { setCount } = useCartCount();
+
 
   const [activeImage, setActiveImage] = useState(
     product.media?.mainImage || product.image || allImages[0] || "",
@@ -122,9 +125,6 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
   const [activeVariantImages, setActiveVariantImages] = useState<string[]>(
     product.media?.gallery ?? [],
   );
-  const [categoryName, setCategoryName] = useState("");
-  const [subCategoryName, setSubCategoryName] = useState("");
-  const [subSubCategoryName, setSubSubCategoryName] = useState("");
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   useEffect(() => {
@@ -136,83 +136,73 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
     sessionStorage.setItem("recentlyViewed", JSON.stringify(newList));
   }, [product]);
 
-  useEffect(() => {
-    const fetchNames = async () => {
-      const getCategoryName = async (id: string): Promise<string> => {
-        const category: Category = await getCategoryById(id);
-        return category.name;
-      };
-      const [cat, sub, subsub] = await Promise.all([
-        getCategoryName(product.categoryId),
-        getCategoryName(product.subCategoryId),
-        getCategoryName(product.subSubCategoryId),
-      ]);
-      setCategoryName(cat);
-      setSubCategoryName(sub);
-      setSubSubCategoryName(subsub);
-    };
-    fetchNames();
-  }, [product]);
-
   const selectedVariant =
     variantOptions.find((variant) => variant.id === activeVariantId) ??
     variantOptions[0];
 
-  const handleAddToCart = async () => {
-    const user = getStoredUser();
+const handleAddToCart = async () => {
+  if (isSoldOut) {
+    toast.error("This product is sold out.");
+    return;
+  }
 
-    if (!user?.id) {
-      toast.error("Please sign in to add items to your cart.");
-      router.push("/login");
-      return;
-    }
+  const user = getStoredUser();
 
-    try {
-      setIsAddingToCart(true);
+  if (!user?.id) {
+    toast.error("Please sign in to add items to your cart.");
+    router.push(buildLoginRedirectPath(pathname));
+    return;
+  }
 
-      const response = await addCartItem({
-        productId: product._id,
-        variantId: selectedVariant?.variantId ?? null,
-      });
+  try {
+    setIsAddingToCart(true);
 
-      toast.success(response.message ?? "Item added to cart");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Unable to add item to cart.",
-      );
-    } finally {
-      setIsAddingToCart(false);
-    }
-  };
+    const response = await addCartItem({
+      productId: product._id,
+      variantId: selectedVariant?.variantId ?? null,
+    });
 
+    toast.success(response.message ?? "Item added to cart");
+    setCount((prev) => prev + 1); // ← increment badge instantly
+  } catch (error) {
+    toast.error(
+      error instanceof Error ? error.message : "Unable to add item to cart.",
+    );
+  } finally {
+    setIsAddingToCart(false);
+  }
+};
   return (
     <div
       className="bg-neutral text-[#171512] min-h-screen"
       style={{ fontFamily: "system-ui, sans-serif" }}
     >
       <div className="mx-auto max-w-[1260px] px-4 sm:px-6 pb-24">
-
         {/* ── Breadcrumb ───────────────────────────────────────────────── */}
         <nav className="flex items-center flex-wrap gap-2 text-xs uppercase tracking-[0.22em] font-semibold text-[#9a9088] my-8 sm:my-10">
-          <Link href="/" className="hover:text-[#171512] transition-colors duration-200">
+          <Link
+            href="/"
+            className="hover:text-[#171512] transition-colors duration-200"
+          >
             Home
           </Link>
           <span className="text-[#ddd6cc]">/</span>
-          <span className="cursor-not-allowed">{categoryName}</span>
+          <span className="cursor-not-allowed">{product.categoryId.name}</span>
           <span className="text-[#ddd6cc]">/</span>
-          <span className="cursor-not-allowed">{subCategoryName}</span>
+          <span className="cursor-not-allowed">
+            {product.subCategoryId.name}
+          </span>
           <span className="text-[#ddd6cc]">/</span>
           <Link
-            href={`/products?subsubcategory=${subSubCategoryName}`}
+            href={`/products?subsubcategory=${product.subSubCategoryId.id}`}
             className="text-[#171512] hover:text-[#9a9088] transition-colors duration-200"
           >
-            {subSubCategoryName}
+            {product.subSubCategoryId.name}
           </Link>
         </nav>
 
         {/* ── HERO ─────────────────────────────────────────────────────── */}
         <section className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 lg:gap-14 items-start">
-
           {/* LEFT — main image + thumbnails */}
           <div className="flex flex-col gap-4 sm:gap-5">
             <div className="overflow-hidden rounded-sm bg-[#e8e2d6]">
@@ -284,16 +274,24 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={isAddingToCart}
-              className="mt-7 sm:mt-8 w-full rounded-sm bg-[#0d0c0b] px-6 py-3.5 text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-[#2c2924] transition-colors disabled:cursor-not-allowed disabled:opacity-70"
+              disabled={isAddingToCart || isSoldOut}
+              className="mt-7 sm:mt-8 w-full cursor-pointer rounded-sm bg-[#0d0c0b] px-6 py-3.5 text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-[#2c2924] transition-colors disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isAddingToCart ? "Adding..." : "Add to Bulk Order"}
-              <span className="text-[15px] leading-none">→</span>
+              {isSoldOut ? (
+                "Sold Out"
+              ) : isAddingToCart ? (
+                "Adding..."
+              ) : (
+                <>
+                  Add to cart
+                  <span className="text-[15px] leading-none">→</span>
+                </>
+              )}
             </button>
 
             {/* Badges */}
             <div className="mt-5 flex flex-wrap gap-2">
-              {["Sustainable", "Mill Quality", "Next Tier"].map((badge) => (
+              {visibleBadges.map((badge) => (
                 <span
                   key={badge}
                   className="rounded-full border border-[#ddd0ba] bg-[#ede3d4] px-3 py-1 text-[9px] uppercase tracking-[0.2em] text-[#8a7a67]"
@@ -307,7 +305,6 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
 
         {/* ── SPECS + PRODUCT DETAILS ──────────────────────────────────── */}
         <section className="mt-10 sm:mt-14 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-5">
-
           {/* Specifications */}
           <div className="rounded-md shadow-md bg-white p-6 sm:p-8">
             <h2

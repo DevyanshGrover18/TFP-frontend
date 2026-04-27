@@ -1,3 +1,5 @@
+import { buildLoginRedirectFromWindow } from "./authRedirect";
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   (process.env.NODE_ENV === "production"
@@ -31,7 +33,10 @@ export const fetchApi = async <T>(
 
   if (response.status === 401) {
     if (onUnauthorizedRedirectTo && typeof window !== "undefined") {
-      window.location.href = onUnauthorizedRedirectTo;
+      window.location.href =
+        onUnauthorizedRedirectTo === "/login"
+          ? buildLoginRedirectFromWindow()
+          : onUnauthorizedRedirectTo;
     }
     throw new Error(data.message ?? "Unauthorized");
   }

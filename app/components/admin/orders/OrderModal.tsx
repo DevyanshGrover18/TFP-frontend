@@ -166,7 +166,7 @@ export default function OrderModal({
                 <p className="font-medium text-gray-900">
                   {invoice.companyName || "No company"}
                 </p>
-                <p>{invoice.category || "No category"}</p>
+                <p>{invoice.category?.name || "No category"}</p>
                 <p>{invoice.website || "No website"}</p>
                 <p>{invoice.vatNumber || "No VAT number"}</p>
               </div>

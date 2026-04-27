@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
-import { signupUser } from "@/app/services/userAuthService";
-import { storeUser } from "@/app/services/userSession";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -16,6 +15,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { signupAsUser } = useAuth();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -33,16 +33,7 @@ export default function SignupPage() {
 
     try {
       setLoading(true);
-      const response = await signupUser(name, email, password);
-
-      if (!response.success) {
-        setError(response.message ?? "Unable to create your account.");
-        return;
-      }
-
-      if (response.user) {
-        storeUser(response.user);
-      }
+      await signupAsUser(name, email, password);
 
       toast.success("Account created successfully");
       router.replace("/");

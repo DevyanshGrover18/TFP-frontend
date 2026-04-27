@@ -3,6 +3,8 @@
 import { Plus, Trash2 } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
+import type { BadgeRecord } from "@/app/services/badgesService";
+import type { ProductCategoryRef } from "@/app/services/productsService";
 import { uploadProductImage } from "@/app/services/uploadsService";
 
 export type CategoryNode = {
@@ -10,6 +12,12 @@ export type CategoryNode = {
   name: string;
   children?: CategoryNode[];
 };
+
+type CategoryRefInput =
+  | string
+  | { id?: string; _id?: string; name?: string }
+  | undefined
+  | null;
 
 export type ProductSpecification = {
   key: string;
@@ -30,23 +38,24 @@ export type ProductFormValues = {
   sku: string;
   name: string;
   colorCode: string;
-  categoryId: string;
-  subCategoryId: string;
-  subSubCategoryId: string;
+  categoryId: ProductCategoryRef;
+  subCategoryId: ProductCategoryRef;
+  subSubCategoryId: ProductCategoryRef;
   description: string;
   specifications: ProductSpecification[];
   media: {
     mainImage: string;
     gallery: string[];
   };
+  badges: string[];
   variants: ProductVariant[];
-  isNew: boolean;
 };
 
 type ProductModalProps = {
   isOpen: boolean;
   mode: "create" | "update";
   categories: CategoryNode[];
+  badges: BadgeRecord[];
   initialValues?: Partial<ProductFormValues>;
   productId?: string;
   isLoading?: boolean;
@@ -57,6 +66,7 @@ type ProductModalProps = {
 type TabId = "basic" | "variants" | "specifications" | "media";
 
 const MAX_IMAGE_SIZE_LABEL = "5 MB";
+const RESERVED_BADGES = ["New", "Sold Out"] as const;
 
 const tabs: Array<{ id: TabId; label: string; caption: string }> = [
   { id: "basic", label: "Basic Info", caption: "Core catalog data" },
@@ -73,18 +83,29 @@ const emptyValues: ProductFormValues = {
   sku: "",
   name: "",
   colorCode: "",
-  categoryId: "",
-  subCategoryId: "",
-  subSubCategoryId: "",
+  categoryId: { id: "", name: "" },
+  subCategoryId: { id: "", name: "" },
+  subSubCategoryId: { id: "", name: "" },
   description: "",
   specifications: [],
   media: {
     mainImage: "",
     gallery: [],
   },
+  badges: [],
   variants: [],
-  isNew: false,
 };
+
+function normalizeCategoryRef(value: CategoryRefInput): ProductCategoryRef {
+  if (typeof value === "string") {
+    return { id: value, name: "" };
+  }
+
+  return {
+    id: value?.id ?? value?._id ?? "",
+    name: value?.name ?? "",
+  };
+}
 
 function cloneInitialValues(
   initialValues?: Partial<ProductFormValues>,
@@ -92,7 +113,10 @@ function cloneInitialValues(
   return {
     ...emptyValues,
     ...initialValues,
-    isNew: initialValues?.isNew ?? false,
+    categoryId: normalizeCategoryRef(initialValues?.categoryId),
+    subCategoryId: normalizeCategoryRef(initialValues?.subCategoryId),
+    subSubCategoryId: normalizeCategoryRef(initialValues?.subSubCategoryId),
+    badges: [...(initialValues?.badges ?? [])],
     specifications:
       initialValues?.specifications?.map((item) => ({ ...item })) ?? [],
     media: {
@@ -127,6 +151,13 @@ function findNode(nodes: CategoryNode[], id: string): CategoryNode | null {
   }
 
   return null;
+}
+
+function toCategoryRef(node?: CategoryNode | null): ProductCategoryRef {
+  return {
+    id: node?._id ?? "",
+    name: node?.name ?? "",
+  };
 }
 
 function ImageThumb({
@@ -203,6 +234,7 @@ const ProductModal = ({
   isOpen,
   mode,
   categories,
+  badges,
   initialValues,
   productId,
   isLoading = false,
@@ -213,6 +245,7 @@ const ProductModal = ({
   const [activeTab, setActiveTab] = useState<TabId>("basic");
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isBadgeMenuOpen, setIsBadgeMenuOpen] = useState(false);
   const [productMainPreview, setProductMainPreview] = useState<string | null>(
     null,
   );
@@ -225,6 +258,26 @@ const ProductModal = ({
   const [variantGalleryPreviews, setVariantGalleryPreviews] = useState<
     Record<number, string[]>
   >({});
+  const availableBadges = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: BadgeRecord[] = [];
+
+    for (const name of RESERVED_BADGES) {
+      seen.add(name);
+      merged.push({ id: `reserved-${name}`, name });
+    }
+
+    for (const badge of badges) {
+      if (seen.has(badge.name)) {
+        continue;
+      }
+
+      seen.add(badge.name);
+      merged.push(badge);
+    }
+
+    return merged;
+  }, [badges]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -235,6 +288,7 @@ const ProductModal = ({
     setActiveTab("basic");
     setError("");
     setIsUploading(false);
+    setIsBadgeMenuOpen(false);
     setProductMainPreview(null);
     setProductGalleryPreviews([]);
     setVariantMainPreviews({});
@@ -243,15 +297,17 @@ const ProductModal = ({
 
   const selectedRoot = useMemo(
     () =>
-      categories.find((category) => category._id === values.categoryId) ?? null,
-    [categories, values.categoryId],
+      categories.find((category) => category._id === values.categoryId.id) ??
+      null,
+    [categories, values.categoryId.id],
   );
   const subCategories = selectedRoot?.children ?? [];
   const selectedSub = useMemo(
     () =>
-      subCategories.find((category) => category._id === values.subCategoryId) ??
-      null,
-    [subCategories, values.subCategoryId],
+      subCategories.find(
+        (category) => category._id === values.subCategoryId.id,
+      ) ?? null,
+    [subCategories, values.subCategoryId.id],
   );
   const subSubCategories = selectedSub?.children ?? [];
 
@@ -376,11 +432,13 @@ const ProductModal = ({
 
   const handleRootChange = (value: string) => {
     const nextRoot = findNode(categories, value);
+    const nextSub = nextRoot?.children?.[0] ?? null;
+    const nextSubSub = nextSub?.children?.[0] ?? null;
     setValues((current) => ({
       ...current,
-      categoryId: value,
-      subCategoryId: nextRoot?.children?.[0]?._id ?? "",
-      subSubCategoryId: nextRoot?.children?.[0]?.children?.[0]?._id ?? "",
+      categoryId: toCategoryRef(nextRoot),
+      subCategoryId: toCategoryRef(nextSub),
+      subSubCategoryId: toCategoryRef(nextSubSub),
     }));
   };
 
@@ -388,8 +446,8 @@ const ProductModal = ({
     const nextSub = findNode(subCategories, value);
     setValues((current) => ({
       ...current,
-      subCategoryId: value,
-      subSubCategoryId: nextSub?.children?.[0]?._id ?? "",
+      subCategoryId: toCategoryRef(nextSub),
+      subSubCategoryId: toCategoryRef(nextSub?.children?.[0] ?? null),
     }));
   };
 
@@ -452,6 +510,13 @@ const ProductModal = ({
     }));
   };
 
+  const selectBadge = (badgeName: string) => {
+    setValues((current) => ({
+      ...current,
+      badges: badgeName ? [badgeName] : [],
+    }));
+  };
+
   const handleSubmit = () => {
     if (isUploading) {
       setActiveTab("media");
@@ -490,9 +555,18 @@ const ProductModal = ({
       sku: (values.sku ?? "").trim(),
       name: (values.name ?? "").trim(),
       colorCode: (values.colorCode ?? "").trim(),
-      categoryId: (values.categoryId ?? "").trim(),
-      subCategoryId: (values.subCategoryId ?? "").trim(),
-      subSubCategoryId: (values.subSubCategoryId ?? "").trim(),
+      categoryId: {
+        id: (values.categoryId?.id ?? "").trim(),
+        name: (values.categoryId?.name ?? "").trim(),
+      },
+      subCategoryId: {
+        id: (values.subCategoryId?.id ?? "").trim(),
+        name: (values.subCategoryId?.name ?? "").trim(),
+      },
+      subSubCategoryId: {
+        id: (values.subSubCategoryId?.id ?? "").trim(),
+        name: (values.subSubCategoryId?.name ?? "").trim(),
+      },
       description: (values.description ?? "").trim(),
       specifications: trimmedSpecifications,
       media: {
@@ -501,17 +575,17 @@ const ProductModal = ({
           .map((image) => image.trim())
           .filter(Boolean),
       },
+      badges: values.badges.map((badge) => badge.trim()).filter(Boolean),
       variants: trimmedVariants,
-      isNew: values.isNew,
     };
 
     if (
       !trimmed.name ||
       !trimmed.sku ||
       !trimmed.colorCode ||
-      !trimmed.categoryId ||
-      !trimmed.subCategoryId ||
-      !trimmed.subSubCategoryId ||
+      !trimmed.categoryId.id ||
+      !trimmed.subCategoryId.id ||
+      !trimmed.subSubCategoryId.id ||
       !trimmed.description
     ) {
       setActiveTab("basic");
@@ -583,7 +657,7 @@ const ProductModal = ({
       <label className="space-y-2 text-sm font-medium text-gray-700">
         <span>Category</span>
         <select
-          value={values.categoryId}
+          value={values.categoryId.id}
           onChange={(event) => handleRootChange(event.target.value)}
           className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
         >
@@ -599,9 +673,9 @@ const ProductModal = ({
       <label className="space-y-2 text-sm font-medium text-gray-700">
         <span>Subcategory</span>
         <select
-          value={values.subCategoryId}
+          value={values.subCategoryId.id}
           onChange={(event) => handleSubChange(event.target.value)}
-          disabled={!values.categoryId}
+          disabled={!values.categoryId.id}
           className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400 disabled:bg-gray-100"
         >
           <option value="">Select subcategory</option>
@@ -616,11 +690,14 @@ const ProductModal = ({
       <label className="space-y-2 text-sm font-medium text-gray-700">
         <span>Sub-subcategory</span>
         <select
-          value={values.subSubCategoryId}
+          value={values.subSubCategoryId.id}
           onChange={(event) =>
-            updateField("subSubCategoryId", event.target.value)
+            updateField(
+              "subSubCategoryId",
+              toCategoryRef(findNode(subSubCategories, event.target.value)),
+            )
           }
-          disabled={!values.subCategoryId}
+          disabled={!values.subCategoryId.id}
           className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400 disabled:bg-gray-100"
         >
           <option value="">Select sub-subcategory</option>
@@ -633,32 +710,19 @@ const ProductModal = ({
       </label>
 
       <div className="space-y-2 text-sm font-medium text-gray-700 md:col-span-2">
-        <span>Availability</span>
-        <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-gray-200 px-4 py-3 transition hover:bg-gray-50">
-          <div>
-            <p className="text-sm font-medium text-gray-900">
-              Mark as new arrival
-            </p>
-            <p className="text-xs text-gray-400">
-              Displays a "New" badge on this product in the catalog.
-            </p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={values.isNew}
-            onClick={() => updateField("isNew", !values.isNew)}
-            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-              values.isNew ? "bg-red-600" : "bg-gray-200"
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                values.isNew ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
-        </label>
+        <span>Badge</span>
+        <select
+          value={values.badges[0] ?? ""}
+          onChange={(event) => selectBadge(event.target.value)}
+          className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
+        >
+          <option value="">No badge</option>
+          {availableBadges.map((badge) => (
+            <option key={badge.id} value={badge.name}>
+              {badge.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <label className="space-y-2 text-sm font-medium text-gray-700 md:col-span-2">

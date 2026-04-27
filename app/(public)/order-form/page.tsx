@@ -1,19 +1,21 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import RegistrationForm from "@/app/components/common/RegistrationForm";
+import { buildLoginRedirectPath } from "@/app/services/authRedirect";
 import { getStoredUser } from "@/app/services/userSession";
 
 export default function OrderForm() {
   const router = useRouter();
+  const pathname = usePathname();
   const user = getStoredUser();
 
   useEffect(() => {
     if (!user?.id) {
-      router.replace("/login");
+      router.replace(buildLoginRedirectPath(pathname));
     }
-  }, [router, user?.id]);
+  }, [pathname, router, user?.id]);
 
   if (!user?.id) {
     return null;

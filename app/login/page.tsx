@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "@/app/context/AuthContext";
+import { getSafePostLoginRedirect } from "@/app/services/authRedirect";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -41,7 +42,12 @@ export default function LoginPage() {
           ? "Signed in as special user"
           : "Signed in successfully",
       );
-      router.replace("/");
+      const redirectTarget = getSafePostLoginRedirect(
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("redirect")
+          : null,
+      );
+      router.replace(redirectTarget);
       router.refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unable to sign in.");

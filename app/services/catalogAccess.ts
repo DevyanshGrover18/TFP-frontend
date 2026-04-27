@@ -7,7 +7,10 @@ export type CatalogCategoryNode = {
   children?: CatalogCategoryNode[];
 };
 
-type ProductCategoryRef = string | { _id: string; name?: string } | undefined;
+type ProductCategoryRef =
+  | string
+  | { _id?: string; id?: string; name?: string }
+  | undefined;
 
 type CatalogProductLike = {
   categoryId?: ProductCategoryRef;
@@ -58,5 +61,6 @@ export function isProductAllowedForCategoryIds(
 }
 
 function getCategoryRefId(value: ProductCategoryRef) {
-  return typeof value === "string" ? value : value?._id;
+  if (typeof value === "string") return value;
+  return value?._id ?? value?.id;
 }
