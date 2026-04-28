@@ -327,8 +327,8 @@ export default function OrderPage() {
                 {invoice.website && (
                   <p className="text-xs text-[#7a736c]">{invoice.website}</p>
                 )}
-                {invoice.vatNumber && (
-                  <p className="text-xs text-[#7a736c]">VAT: {invoice.vatNumber}</p>
+                {invoice.gstNumber && (
+                  <p className="text-xs text-[#7a736c]">VAT: {invoice.gstNumber}</p>
                 )}
               </div>
             </div>

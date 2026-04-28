@@ -12,11 +12,7 @@ import {
   updateCurrentUserProfile,
   type UserQuoteProfile,
 } from "@/app/services/userService";
-import {
-  getStoredSpecialUserProfile,
-  storeSpecialUserProfile,
-} from "@/app/services/specialUserProfileSession";
-import { storeUser } from "@/app/services/userSession";
+import { storeUser, storeSpecialUser } from "@/app/services/userSession";
 
 const emptyProfile: UserQuoteProfile = {
   invoice: {
@@ -141,36 +137,12 @@ export default function AccountPage() {
       },
     }));
 
-    if (isSpecialSession) {
-      const storedProfile = getStoredSpecialUserProfile(activeUser.id);
-
-      if (storedProfile) {
-        setProfile({
-          invoice: storedProfile.invoice,
-          shipping: storedProfile.shipping,
-          details: {
-            ...storedProfile.details,
-            firstName: storedProfile.details.firstName || name.firstName,
-            lastName: storedProfile.details.lastName || name.lastName,
-            email: storedProfile.details.email || activeUser.email,
-          },
-        });
-        setHasSavedDetails(hasProfileDetails(storedProfile));
-      } else {
-        setHasSavedDetails(false);
-      }
-
-      setOrders([]);
-      setIsLoading(false);
-      return;
-    }
-
     const loadAccount = async () => {
       try {
         setError("");
         const [profileResponse, ordersResponse] = await Promise.all([
           getCurrentUserProfile(),
-          getMyOrders(),
+          isSpecialSession ? Promise.resolve({ orders: [] }) : getMyOrders(),
         ]);
 
         if (profileResponse.profile) {
@@ -191,7 +163,7 @@ export default function AccountPage() {
     };
 
     void loadAccount();
-  }, [isSpecialSession, specialUser, user]);
+  }, [isSpecialSession, specialUser?.id, user?.id]);
 
   const fullName = useMemo(
     () => `${profile.details.firstName} ${profile.details.lastName}`.trim(),
@@ -242,13 +214,6 @@ export default function AccountPage() {
       setIsSaving(true);
       setError("");
 
-      if (isSpecialSession && specialUser?.id) {
-        storeSpecialUserProfile(specialUser.id, profile);
-        setHasSavedDetails(hasProfileDetails(profile));
-        toast.success("Details saved");
-        return;
-      }
-
       const response = await updateCurrentUserProfile(profile);
 
       if (response.profile) {
@@ -257,11 +222,20 @@ export default function AccountPage() {
       }
 
       if (response.user) {
-        storeUser({
-          id: response.user.id,
-          name: response.user.name,
-          email: response.user.email,
-        });
+        if (isSpecialSession) {
+          storeSpecialUser({
+            id: response.user.id,
+            name: response.user.name,
+            email: response.user.email,
+            isSpecial: true,
+          });
+        } else {
+          storeUser({
+            id: response.user.id,
+            name: response.user.name,
+            email: response.user.email,
+          });
+        }
       }
 
       toast.success(response.message ?? "Account updated");

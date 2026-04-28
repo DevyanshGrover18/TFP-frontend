@@ -10,8 +10,8 @@ import {
   type CartItemRecord,
 } from "@/app/services/cartService";
 import { buildLoginRedirectPath } from "@/app/services/authRedirect";
-import { getStoredUser } from "@/app/services/userSession";
 import { useCartCount } from "@/app/context/CartCountContext";
+import { useAuth } from "@/app/context/AuthContext";
 
 type PendingState = Record<string, boolean>;
 
@@ -32,16 +32,27 @@ export default function CartDetails() {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Bug fix: use AuthContext which tracks both "user" and "special" sessions.
+  // Previously the guard only checked getStoredUser() (regular-user localStorage key),
+  // so special users were always redirected to /login.
+  const { sessionType } = useAuth();
+
   const { setCount } = useCartCount();
 
   useEffect(() => {
-    const user = getStoredUser();
+    // Allow access for both regular users and special users
+    if (sessionType === null) {
+      // sessionType starts null until AuthContext rehydrates from sessionStorage.
+      // We stay in loading state and wait for the next render.
+      return;
+    }
 
-    if (!user?.id) {
+    if (sessionType !== "user" && sessionType !== "special") {
       setIsAuthorized(false);
       router.replace(buildLoginRedirectPath(pathname));
       return;
     }
+
     setIsAuthorized(true);
 
     const loadCart = async () => {
@@ -60,7 +71,7 @@ export default function CartDetails() {
     };
 
     loadCart();
-  }, [router]);
+  }, [sessionType, router, pathname]);
 
   const totalItems = useMemo(() => items.length, [items]);
   useEffect(() => {

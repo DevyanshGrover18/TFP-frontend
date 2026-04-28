@@ -11,6 +11,9 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { getStatsCardData } from "@/app/services/overviewService";
+import RecentOrders from "@/app/components/admin/overview/RecentOrders";
+import RecentUsers from "@/app/components/admin/overview/RecentUsers";
+import TopCategories from "@/app/components/admin/overview/TopCategories";
 
 const recentOrders = [
   {
@@ -103,15 +106,13 @@ const Overview: React.FC = () => {
   });
 
   useEffect(() => {
-    const fetchStatsCardData = async()=>{
+    const fetchStatsCardData = async () => {
       const response = await getStatsCardData();
-      setData(response.data)
-    }
+      setData(response.data);
+    };
 
-    fetchStatsCardData()
-    
-  }, [])
-  
+    fetchStatsCardData();
+  }, []);
 
   const stats = [
     {
@@ -225,135 +226,11 @@ const Overview: React.FC = () => {
             ))}
           </div>
         </div>
-
-        {/* Categories */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-800">Categories</h2>
-            <button className="text-xs text-indigo-500 flex items-center gap-1 hover:underline">
-              View all <ArrowRight size={12} />
-            </button>
-          </div>
-
-          {/* Stacked bar */}
-          <div className="flex h-2 rounded-full overflow-hidden mb-5 gap-0.5">
-            {categories.map((c) => (
-              <div
-                key={c.name}
-                className={`${c.color} h-full`}
-                style={{ width: `${c.pct}%` }}
-              />
-            ))}
-          </div>
-
-          <div className="space-y-3">
-            {categories.map((c) => (
-              <div key={c.name} className="flex items-center gap-2">
-                <span
-                  className={`w-2.5 h-2.5 rounded-full ${c.color} flex-shrink-0`}
-                />
-                <p className="text-sm text-gray-700 flex-1">{c.name}</p>
-                <p className="text-xs text-gray-400">{c.count} products</p>
-                <p className="text-xs font-semibold text-gray-600 w-8 text-right">
-                  {c.pct}%
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <TopCategories/>
       </div>
-
-      {/* Bottom Row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {/* Recent Orders */}
-        <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-800">
-              Recent Orders
-            </h2>
-            <button className="text-xs text-indigo-500 flex items-center gap-1 hover:underline">
-              View all <ArrowRight size={12} />
-            </button>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-400 border-b border-gray-100">
-                <th className="text-left pb-2 font-medium">Order</th>
-                <th className="text-left pb-2 font-medium">Customer</th>
-                <th className="text-left pb-2 font-medium hidden md:table-cell">
-                  Product
-                </th>
-                <th className="text-left pb-2 font-medium">Status</th>
-                <th className="text-right pb-2 font-medium">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentOrders.map((o) => (
-                <tr
-                  key={o.id}
-                  className="border-b border-gray-50 last:border-0"
-                >
-                  <td className="py-2.5 text-gray-400 text-xs">{o.id}</td>
-                  <td className="py-2.5 text-gray-800 font-medium">
-                    {o.customer}
-                  </td>
-                  <td className="py-2.5 text-gray-500 hidden md:table-cell">
-                    {o.product}
-                  </td>
-                  <td className="py-2.5">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyles[o.status]}`}
-                    >
-                      {o.status}
-                    </span>
-                  </td>
-                  <td className="py-2.5 text-right text-gray-800 font-semibold">
-                    {o.amount}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Recent Users */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-800">
-              Recent Users
-            </h2>
-            <button className="text-xs text-indigo-500 flex items-center gap-1 hover:underline">
-              View all <ArrowRight size={12} />
-            </button>
-          </div>
-          <div className="space-y-3">
-            {recentUsers.map((u) => {
-              const initials = u.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("");
-              return (
-                <div key={u.email} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold flex items-center justify-center flex-shrink-0">
-                    {initials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {u.name}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">{u.email}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-400">{u.joined}</p>
-                    <p className="text-xs font-semibold text-gray-600">
-                      {u.orders} orders
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <RecentOrders />
+        <RecentUsers />
       </div>
     </div>
   );

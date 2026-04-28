@@ -144,6 +144,7 @@ export default function ProductsPage() {
       badges: modalState.product.badges,
       isSpecial: modalState.product.isSpecial ?? false,
       variants: modalState.product.variants,
+       tags: modalState.product.tags ?? [],
     };
   }, [modalState.product]);
 
@@ -155,7 +156,8 @@ export default function ProductsPage() {
         await createProduct(values);
         toast.success("Product created successfully");
       } else if (modalState.product?._id) {
-        await updateProduct(modalState.product._id, values);
+        const {product} = await updateProduct(modalState.product._id, values);
+        console.log(product)
         toast.success("Product updated successfully");
       }
 

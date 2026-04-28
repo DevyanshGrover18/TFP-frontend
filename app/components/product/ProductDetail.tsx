@@ -5,7 +5,6 @@ import type { ProductRecord } from "@/app/services/productsService";
 import RecentlyViewed from "./RecentlyViewed";
 import { addCartItem } from "@/app/services/cartService";
 import { buildLoginRedirectPath } from "@/app/services/authRedirect";
-import { getStoredUser } from "@/app/services/userSession";
 import { toast } from "react-toastify";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -114,7 +113,7 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { setCount } = useCartCount();
-  const { isSpecialSession } = useAuth();
+  const { isSpecialSession, specialUser, user } = useAuth();
 
   const [activeImage, setActiveImage] = useState(
     product.media?.mainImage || product.image || allImages[0] || "",
@@ -151,14 +150,16 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
   }
 
   const handleAddToCart = async () => {
+    console.log("auth state:", { user, specialUser, isSpecialSession });
     if (isSoldOut) {
       toast.error("This product is sold out.");
       return;
     }
 
-    const user = getStoredUser();
+    // Get active user from context (works for both regular and special users)
+    const activeUserId = user?.id ?? specialUser?.id;
 
-    if (!user?.id) {
+    if (!activeUserId) {
       toast.error("Please sign in to add items to your cart.");
       router.push(buildLoginRedirectPath(pathname));
       return;
@@ -173,7 +174,7 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
       });
 
       toast.success(response.message ?? "Item added to cart");
-      setCount((prev) => prev + 1); // ← increment badge instantly
+      setCount((prev) => prev + 1);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to add item to cart.",

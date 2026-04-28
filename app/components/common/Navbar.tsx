@@ -1,15 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useRef, useState } from "react";
-import {
-  Search,
-  User,
-  ShoppingBag,
-  ChevronDown,
-  Menu,
-  X,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Search, User, ShoppingBag, ChevronDown, Menu, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getAllCategories } from "@/app/services/categoriesService";
 import { useAuth } from "@/app/context/AuthContext";
@@ -17,6 +10,7 @@ import { useCartCount } from "@/app/context/CartCountContext";
 import { getCartItems } from "@/app/services/cartService";
 import { getStoredUser } from "@/app/services/userSession";
 import SpecialUserLoginModal from "@/app/components/specialUsers/SpecialUserLoginModal";
+import SearchBar from "./SearchBar";
 
 type CategoryNode = {
   _id: string;
@@ -227,7 +221,6 @@ const MobileDrawer = ({
 };
 
 const Navbar = () => {
-  const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [allCategories, setAllCategories] = useState<CategoryNode[]>([]);
   const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(
@@ -239,10 +232,9 @@ const Navbar = () => {
   const [specialLoginError, setSpecialLoginError] = useState("");
 
   const navRef = useRef<HTMLElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const { isSpecialSession, loginAsSpecialUser } = useAuth();
+  const { sessionType, isSpecialSession, loginAsSpecialUser } = useAuth();
   const { count, setCount } = useCartCount();
 
   useEffect(() => {
@@ -253,8 +245,10 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    const user = getStoredUser();
-    if (!user?.id) return;
+    // If session is still loading or no session active, don't fetch cart
+    if (sessionType === null || (sessionType !== "user" && sessionType !== "special")) {
+      return;
+    }
 
     const loadCount = async () => {
       try {
@@ -264,9 +258,8 @@ const Navbar = () => {
         return;
       }
     };
-
     void loadCount();
-  }, [setCount]);
+  }, [setCount, sessionType]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -275,16 +268,9 @@ const Navbar = () => {
         setSearchOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    if (searchOpen) {
-      searchRef.current?.focus();
-    }
-  }, [searchOpen]);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -293,36 +279,22 @@ const Navbar = () => {
     };
   }, [mobileOpen]);
 
-  useEffect(() => {
-    if (
-      activeCategory &&
-      !allCategories.find((category) => category._id === activeCategory._id)
-    ) {
-      setActiveCategory(null);
-    }
-  }, [activeCategory, allCategories]);
-
   const handleCategoryClick = (category: CategoryNode) => {
     const hasChildren = (category.children?.length ?? 0) > 0;
     if (!hasChildren) {
       setActiveCategory(null);
       return;
     }
-
-    setActiveCategory((prev) =>
-      prev?._id === category._id ? null : category,
-    );
+    setActiveCategory((prev) => (prev?._id === category._id ? null : category));
   };
 
   const openSpecialAccess = () => {
     setActiveCategory(null);
     setMobileOpen(false);
-
     if (isSpecialSession) {
       router.push("/special");
       return;
     }
-
     setSpecialLoginError("");
     setIsSpecialLoginOpen(true);
   };
@@ -375,7 +347,6 @@ const Navbar = () => {
             {allCategories.map((category) => {
               const hasChildren = (category.children?.length ?? 0) > 0;
               const isActive = activeCategory?._id === category._id;
-
               return (
                 <button
                   key={category._id}
@@ -413,25 +384,20 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-5">
-            <div className="flex items-center gap-2">
-              {searchOpen && (
-                <input
-                  ref={searchRef}
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search fabrics..."
-                  className="w-28 border-b border-secondary bg-transparent pb-0.5 font-sans text-sm text-primary outline-none placeholder-tertiary sm:w-40"
-                />
-              )}
+            {searchOpen ? (
+              <SearchBar
+                onClose={() => setSearchOpen(false)}
+                isSpecialSession={isSpecialSession}
+              />
+            ) : (
               <button
-                onClick={() => setSearchOpen((v) => !v)}
+                onClick={() => setSearchOpen(true)}
                 className="flex items-center gap-1.5 font-sans text-xs uppercase tracking-widest text-primary transition-colors duration-150 hover:text-secondary"
               >
                 <Search size={15} strokeWidth={1.5} />
-                {!searchOpen && <span className="hidden sm:inline">Search</span>}
+                <span className="hidden sm:inline">Search</span>
               </button>
-            </div>
+            )}
 
             <Link
               href="/account"

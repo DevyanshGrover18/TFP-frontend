@@ -6,6 +6,7 @@ export type Category = {
   image?: string;
   parentId?: string;
   level: number;
+  productCount?: number;
   children?: Category[];
 };
 

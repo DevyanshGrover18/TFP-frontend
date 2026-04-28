@@ -8,9 +8,10 @@ import {
   updateCurrentUserProfile,
   type UserQuoteProfile,
 } from "@/app/services/userService";
-import { getStoredUser, storeUser } from "@/app/services/userSession";
+import { getStoredUser, storeUser, storeSpecialUser } from "@/app/services/userSession";
 import { clearCart } from "@/app/services/cartService";
 import { useCartCount } from "@/app/context/CartCountContext";
+import { useAuth } from "@/app/context/AuthContext";
 
 type InvoiceAddress = UserQuoteProfile["invoice"];
 type ShippingAddress = UserQuoteProfile["shipping"];
@@ -207,6 +208,9 @@ export default function RegistrationForm() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { setCount } = useCartCount();
+  const { sessionType, user: regularUser, specialUser } = useAuth();
+
+  const activeUser = sessionType === "special" ? specialUser : regularUser;
 
   useEffect(() => {
     fetch("https://restcountries.com/v3.1/all?fields=name,idd,cca2,flag")
@@ -246,14 +250,12 @@ export default function RegistrationForm() {
   }, []);
 
   useEffect(() => {
-    const currentUser = getStoredUser();
-
-    if (!currentUser?.id) {
+    if (!activeUser?.id) {
       setIsLoadingProfile(false);
       return;
     }
 
-    const nameParts = buildNameParts(currentUser.name);
+    const nameParts = buildNameParts(activeUser.name);
 
     setForm((current) => ({
       ...current,
@@ -261,7 +263,7 @@ export default function RegistrationForm() {
         ...current.details,
         firstName: current.details.firstName || nameParts.firstName,
         lastName: current.details.lastName || nameParts.lastName,
-        email: current.details.email || currentUser.email,
+        email: current.details.email || activeUser.email,
       },
     }));
 
@@ -285,7 +287,7 @@ export default function RegistrationForm() {
               ...profile.details,
               email:
                 profile.details.email ||
-                currentUser.email ||
+                activeUser.email ||
                 current.details.email,
             },
           }));
@@ -399,11 +401,20 @@ export default function RegistrationForm() {
       const response = await updateCurrentUserProfile(form);
 
       if (response.user) {
-        storeUser({
-          id: response.user.id,
-          name: response.user.name,
-          email: response.user.email,
-        });
+        if (sessionType === "special") {
+          storeSpecialUser({
+            id: response.user.id,
+            name: response.user.name,
+            email: response.user.email,
+            isSpecial: true,
+          });
+        } else {
+          storeUser({
+            id: response.user.id,
+            name: response.user.name,
+            email: response.user.email,
+          });
+        }
       }
 
       const orderResponse = await createOrder();

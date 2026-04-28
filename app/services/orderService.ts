@@ -30,6 +30,7 @@ export type OrderRecord = {
   status: "Pending" | "Processing" | "Completed" | "Cancelled";
   createdAt: string;
   userId: string;
+  userRole?: "user" | "special" | null;
   customerName: string;
   companyName: string;
   email: string;

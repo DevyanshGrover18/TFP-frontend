@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { BadgeRecord } from "@/app/services/badgesService";
@@ -50,6 +50,7 @@ export type ProductFormValues = {
   badges: string[];
   isSpecial: boolean;
   variants: ProductVariant[];
+  tags: string[];
 };
 
 type ProductModalProps = {
@@ -96,6 +97,7 @@ const emptyValues: ProductFormValues = {
   badges: [],
   isSpecial: false,
   variants: [],
+  tags: [],
 };
 
 function normalizeCategoryRef(value: CategoryRefInput): ProductCategoryRef {
@@ -138,6 +140,7 @@ function cloneInitialValues(
           gallery: [...(variant.gallery ?? [])],
         }))
       : [],
+    tags: [...(initialValues?.tags ?? [])],
   };
 }
 
@@ -247,6 +250,7 @@ const ProductModal = ({
   const [values, setValues] = useState<ProductFormValues>(emptyValues);
   const [activeTab, setActiveTab] = useState<TabId>("basic");
   const [error, setError] = useState("");
+  const [tagInput, setTagInput] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isBadgeMenuOpen, setIsBadgeMenuOpen] = useState(false);
   const [productMainPreview, setProductMainPreview] = useState<string | null>(
@@ -527,6 +531,12 @@ const ProductModal = ({
       return;
     }
 
+    const pendingTag = tagInput.trim();
+    const finalTags =
+      pendingTag && !values.tags.includes(pendingTag)
+        ? [...values.tags, pendingTag]
+        : values.tags;
+
     const trimmedSpecifications = values.specifications
       .map((specification) => ({
         key: specification.key.trim(),
@@ -572,6 +582,7 @@ const ProductModal = ({
       },
       description: (values.description ?? "").trim(),
       specifications: trimmedSpecifications,
+      tags: finalTags.map((t) => t.trim()).filter(Boolean),
       media: {
         mainImage: values.media.mainImage.trim(),
         gallery: values.media.gallery
@@ -713,7 +724,54 @@ const ProductModal = ({
         </select>
       </label>
 
-      <div className="space-y-2 text-sm font-medium text-gray-700 md:col-span-2">
+      <div className="space-y-2 text-sm font-medium text-gray-700">
+        <span>Tags</span>
+        <div className="flex gap-2">
+          <input
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const trimmed = tagInput.trim();
+                if (trimmed && !values.tags.includes(trimmed)) {
+                  updateField("tags", [...values.tags, trimmed]);
+                }
+                setTagInput("");
+              }
+            }}
+            type="text"
+            placeholder="Type a tag and press Enter"
+            className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
+          />
+        </div>
+        {values.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {values.tags.map((tag) => (
+              <span
+                key={tag}
+                className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateField(
+                      "tags",
+                      values.tags.filter((t) => t !== tag),
+                    )
+                  }
+                  className="text-gray-400 cursor-pointer hover:text-gray-700"
+                >
+                  <X size={15} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2 text-sm font-medium text-gray-700">
         <span>Badge</span>
         <select
           value={values.badges[0] ?? ""}
@@ -741,7 +799,8 @@ const ProductModal = ({
             Mark as special
           </span>
           <span className="block text-xs text-gray-500">
-            Hide this product from normal users and expose it to special users only.
+            Hide this product from normal users and expose it to special users
+            only.
           </span>
         </span>
       </label>

@@ -66,6 +66,7 @@ export type ProductRecord = {
     gallery: string[];
   }>;
   isNew?: boolean;
+  tags?: string[];
 };
 
 export type ProductFilterOption = {
