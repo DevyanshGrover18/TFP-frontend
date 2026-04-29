@@ -71,11 +71,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
           />
 
           {visibleBadges.length ? (
-            <div className="absolute -left-14 top-6 z-10 flex max-w-[70%] -rotate-45 flex-wrap gap-2">
+            <div className="absolute -left-10 top-4 md:-left-14 md:top-6 z-10 flex max-w-[70%] -rotate-45 flex-wrap gap-2">
               {visibleBadges.map((item) => (
                 <span
                   key={item}
-                  className="w-72 bg-red-500 px-2.5 py-1 text-center text-xs font-semibold uppercase tracking-wide text-white shadow-sm"
+                  className="w-72 bg-red-500 px-2.5 py-1 text-center text-[9px] md:text-xs font-semibold uppercase tracking-wide text-white shadow-sm"
                 >
                   {item}
                 </span>

@@ -9,7 +9,14 @@ import {
   type ReactNode,
 } from "react";
 import { fetchApi } from "@/app/services/api";
-import { clearStoredUser, storeUser } from "@/app/services/userSession";
+import {
+  clearStoredSpecialUser,
+  getStoredSpecialUser,
+  getStoredUser,
+  clearStoredUser,
+  storeSpecialUser,
+  storeUser,
+} from "@/app/services/userSession";
 
 export type SessionType = "user" | "special" | null;
 
@@ -50,11 +57,38 @@ function readSession(): AuthState {
   }
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
-    if (!raw) return { sessionType: null, user: null, specialUser: null };
+    if (!raw) return readStoredSession();
     return JSON.parse(raw) as AuthState;
   } catch {
-    return { sessionType: null, user: null, specialUser: null };
+    return readStoredSession();
   }
+}
+
+function readStoredSession(): AuthState {
+  const storedSpecialUser = getStoredSpecialUser();
+  if (storedSpecialUser) {
+    return {
+      sessionType: "special",
+      user: null,
+      specialUser: {
+        id: storedSpecialUser.id,
+        name: storedSpecialUser.name,
+        email: storedSpecialUser.email,
+        allowedCategories: storedSpecialUser.allowedCategories ?? [],
+      },
+    };
+  }
+
+  const storedUser = getStoredUser();
+  if (storedUser) {
+    return {
+      sessionType: "user",
+      user: storedUser,
+      specialUser: null,
+    };
+  }
+
+  return { sessionType: null, user: null, specialUser: null };
 }
 
 function writeSession(state: AuthState) {
@@ -113,6 +147,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
 
       clearStoredUser();
+      clearStoredSpecialUser();
+      storeSpecialUser({
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        isSpecial: true,
+        allowedCategories: data.user.allowedCategories,
+      });
       setState(next);
       writeSession(next);
     },
@@ -148,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         specialUser: null,
       };
 
+      clearStoredSpecialUser();
       storeUser(data.user);
       setState(next);
       writeSession(next);
@@ -184,6 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       specialUser: null,
     };
 
+    clearStoredSpecialUser();
     storeUser(data.user);
     setState(next);
     writeSession(next);
@@ -203,6 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     clearStoredUser();
+    clearStoredSpecialUser();
     clearSession();
     setState({ sessionType: null, user: null, specialUser: null });
   }, [state.sessionType]);

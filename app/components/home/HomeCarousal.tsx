@@ -108,8 +108,12 @@ const HomeCarousal: React.FC = () => {
     <div className="w-full select-none">
       <div
         className="relative w-full overflow-hidden bg-black"
-        style={{ height: "92vh", maxHeight: "780px", minHeight: "500px" }}
+        style={{
+          height: "min(92vh, 780px)",
+          minHeight: "360px",
+        }}
       >
+        {/* Exiting slide */}
         {prev !== null && (
           <div
             key={`prev-${prev}`}
@@ -133,6 +137,7 @@ const HomeCarousal: React.FC = () => {
           </div>
         )}
 
+        {/* Current slide */}
         <div
           key={`curr-${current}`}
           className="absolute inset-0"
@@ -163,11 +168,23 @@ const HomeCarousal: React.FC = () => {
           />
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 max-w-3xl px-8 pb-16 sm:px-12 lg:px-16 lg:pb-20">
+        {/* Slide text content */}
+        <div
+          className="absolute bottom-0 left-0 right-0 max-w-3xl"
+          style={{
+            padding:
+              "0 clamp(1rem, 6vw, 4rem) clamp(3rem, 6vw, 5rem)",
+          }}
+        >
           <p
             key={`eyebrow-${current}`}
-            className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em]"
-            style={{ animation: "fadeUp 0.5s ease 0.15s both" }}
+            className="mb-3 font-semibold uppercase"
+            style={{
+              fontSize: "clamp(9px, 1.5vw, 11px)",
+              letterSpacing: "0.3em",
+              color: "rgba(245,243,238,0.8)",
+              animation: "fadeUp 0.5s ease 0.15s both",
+            }}
           >
             {slides[current].eyebrow}
           </p>
@@ -175,7 +192,7 @@ const HomeCarousal: React.FC = () => {
             key={`title-${current}`}
             className="mb-3 font-serif leading-tight text-white"
             style={{
-              fontSize: "clamp(2rem, 5vw, 3.5rem)",
+              fontSize: "clamp(1.6rem, 5.5vw, 3.5rem)",
               fontStyle: "italic",
               fontWeight: 400,
               animation: "fadeUp 0.6s ease 0.2s both",
@@ -185,8 +202,9 @@ const HomeCarousal: React.FC = () => {
           </h2>
           <p
             key={`sub-${current}`}
-            className="mb-7 max-w-xl text-sm leading-relaxed sm:text-base"
+            className="mb-7 max-w-xl leading-relaxed"
             style={{
+              fontSize: "clamp(13px, 1.8vw, 16px)",
               color: "rgba(245,243,238,0.72)",
               animation: "fadeUp 0.6s ease 0.3s both",
             }}
@@ -196,8 +214,10 @@ const HomeCarousal: React.FC = () => {
           <a
             key={`cta-${current}`}
             href="#"
-            className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition-all duration-200 hover:gap-3"
+            className="inline-flex items-center gap-2 font-semibold uppercase text-white transition-all duration-200 hover:gap-3"
             style={{
+              fontSize: "clamp(9px, 1.4vw, 11px)",
+              letterSpacing: "0.2em",
               animation: "fadeUp 0.6s ease 0.4s both",
               borderBottom: "1px solid rgba(201,169,110,0.6)",
               color: "#f5f3ee",
@@ -213,22 +233,35 @@ const HomeCarousal: React.FC = () => {
           </a>
         </div>
 
+        {/* Prev button */}
         <button
           onClick={() => handleManual(back)}
           aria-label="Previous"
-          className="absolute left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/30 backdrop-blur-sm transition-all duration-200 hover:bg-black/50"
+          className="absolute top-1/2 z-10 flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/30 backdrop-blur-sm transition-all duration-200 hover:bg-black/50"
+          style={{
+            left: "clamp(8px, 2vw, 16px)",
+            width: "clamp(36px, 5vw, 44px)",
+            height: "clamp(36px, 5vw, 44px)",
+          }}
         >
           <ChevronLeft />
         </button>
 
+        {/* Next button */}
         <button
           onClick={() => handleManual(next)}
           aria-label="Next"
-          className="absolute right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/30 backdrop-blur-sm transition-all duration-200 hover:bg-black/50"
+          className="absolute top-1/2 z-10 flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/30 backdrop-blur-sm transition-all duration-200 hover:bg-black/50"
+          style={{
+            right: "clamp(8px, 2vw, 16px)",
+            width: "clamp(36px, 5vw, 44px)",
+            height: "clamp(36px, 5vw, 44px)",
+          }}
         >
           <ChevronRight />
         </button>
 
+        {/* Keyframe animations */}
         <style>{`
           @keyframes enterRight {
             from { transform: translateX(60px); opacity: 0; }
@@ -252,17 +285,21 @@ const HomeCarousal: React.FC = () => {
           }
         `}</style>
 
+        {/* Dot indicators */}
         <div className="absolute bottom-6 left-1/2 z-50 flex -translate-x-1/2 gap-2">
           {slides.map((slide, index) => (
             <button
               key={slide.id}
               onClick={() =>
-                handleManual(() => goTo(index, index > current ? "right" : "left"))
+                handleManual(() =>
+                  goTo(index, index > current ? "right" : "left"),
+                )
               }
               aria-label={`Slide ${index + 1}`}
-              className="h-[6px] cursor-pointer rounded-full border-none p-0 transition-all duration-300"
+              className="cursor-pointer rounded-full border-none p-0 transition-all duration-300"
               style={{
-                width: index === current ? "28px" : "6px",
+                height: "clamp(4px, 1vw, 6px)",
+                width: index === current ? "clamp(20px, 3vw, 28px)" : "clamp(4px, 1vw, 6px)",
                 backgroundColor:
                   index === current ? "#ffffff" : "rgba(156,163,175,0.5)",
               }}

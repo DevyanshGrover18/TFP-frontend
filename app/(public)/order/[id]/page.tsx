@@ -83,7 +83,7 @@ export default function OrderPage() {
 
     const loadOrder = async () => {
       try {
-        setIsLoading(false);
+        setIsLoading(true);
         setError("");
         const response = await getOrderById(id);
         setOrder(response.order ?? null);

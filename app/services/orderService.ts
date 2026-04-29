@@ -1,6 +1,11 @@
 import { fetchApi } from "./api";
 import type { UserQuoteProfile } from "./userService";
 
+export type OrderDateRange = {
+  startDate: string;
+  endDate: string;
+};
+
 export type OrderItemRecord = {
   productId: string;
   variantId: string | null;
@@ -51,10 +56,24 @@ export const createOrder = async () => {
   );
 };
 
-export const getAllOrders = async () => {
-  return fetchApi<{ orders?: OrderRecord[]; message?: string }>("/orders", {
-    cache: "no-store",
-  });
+function buildRangeQuery(range?: OrderDateRange) {
+  if (!range) {
+    return "";
+  }
+
+  return `?${new URLSearchParams({
+    startDate: range.startDate,
+    endDate: range.endDate,
+  }).toString()}`;
+}
+
+export const getAllOrders = async (range?: OrderDateRange) => {
+  return fetchApi<{ orders?: OrderRecord[]; message?: string }>(
+    `/orders${buildRangeQuery(range)}`,
+    {
+      cache: "no-store",
+    },
+  );
 };
 
 export const getMyOrders = async () => {
@@ -67,12 +86,11 @@ export const getMyOrders = async () => {
 export const getOrderById = async (id: string) => {
   return fetchApi<{ order?: OrderRecord; message?: string }>(`/orders/${id}`, {
     cache: "no-store",
+    onUnauthorizedRedirectTo: "/login",
   });
 };
 
 export const sendOrderSuccessMail = async (
-  name?: string,
-  email?: string,
   orderId?: string,
 ) => {
   return fetchApi<{ success?: boolean; message?: string }>(
@@ -82,8 +100,9 @@ export const sendOrderSuccessMail = async (
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ name, email, orderId }),
+      body: JSON.stringify({ orderId }),
       credentials: "include",
+      onUnauthorizedRedirectTo: "/login",
     },
   );
 };

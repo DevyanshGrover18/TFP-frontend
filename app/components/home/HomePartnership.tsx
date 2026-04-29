@@ -12,25 +12,25 @@ type Feature = {
 
 const features: Feature[] = [
   {
-    icon: <Package size={28} strokeWidth={1.4} />,
+    icon: <Package size={24} strokeWidth={1.4} />,
     title: "Bulk Pricing",
     description:
       "Tiered pricing structures designed for scale, from 50 yards to container loads.",
   },
   {
-    icon: <Truck size={28} strokeWidth={1.4} />,
+    icon: <Truck size={24} strokeWidth={1.4} />,
     title: "Priority Logistics",
     description:
       "Global white-glove shipping with real-time tracking and customs clearance assistance.",
   },
   {
-    icon: <ShieldCheck size={28} strokeWidth={1.4} />,
+    icon: <ShieldCheck size={24} strokeWidth={1.4} />,
     title: "Certified Quality",
     description:
       "Every yard is multi-point inspected and OEKO-TEX certified where applicable.",
   },
   {
-    icon: <Scissors size={28} strokeWidth={1.4} />,
+    icon: <Scissors size={24} strokeWidth={1.4} />,
     title: "Custom Weaving",
     description:
       "Proprietary dye matching and custom weave patterns for exclusive client collections.",
@@ -40,14 +40,15 @@ const features: Feature[] = [
 const HomePartnership = () => {
   return (
     <section
-      className="px-4 py-20 sm:px-6 lg:px-10"
+      className="px-4 py-14 sm:px-6 sm:py-20 lg:px-10"
       style={{ backgroundColor: "#1c2032" }}
     >
       <div className="mx-auto max-w-5xl">
+
         {/* Header */}
-        <div className="mb-16 text-center">
+        <div className="mb-10 text-center sm:mb-16">
           <h2
-            className="mb-4 text-4xl italic text-stone-100 sm:text-5xl"
+            className="mb-3 text-3xl italic text-stone-100 sm:text-4xl lg:text-5xl"
             style={{
               fontFamily: "'Georgia', 'Times New Roman', serif",
               fontWeight: 400,
@@ -57,7 +58,7 @@ const HomePartnership = () => {
             Partnership Excellence
           </h2>
           <p
-            className="mx-auto max-w-md text-sm leading-relaxed text-stone-400"
+            className="mx-auto max-w-sm text-sm leading-relaxed text-stone-400 sm:max-w-md"
             style={{ fontFamily: "'Georgia', serif" }}
           >
             Providing a seamless infrastructure for global design houses and
@@ -65,8 +66,8 @@ const HomePartnership = () => {
           </p>
         </div>
 
-        {/* Feature Grid */}
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Feature Grid — 2 col on mobile, 4 col on lg */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:gap-x-10 lg:grid-cols-4">
           {features.map((feature) => (
             <div key={feature.title} className="flex flex-col gap-3">
               {/* Icon */}
@@ -74,19 +75,20 @@ const HomePartnership = () => {
 
               {/* Title */}
               <h3
-                className="text-sm font-semibold uppercase tracking-widest text-stone-200"
+                className="text-xs font-semibold uppercase text-stone-200 sm:text-sm"
                 style={{ letterSpacing: "0.12em" }}
               >
                 {feature.title}
               </h3>
 
               {/* Description */}
-              <p className="text-xs leading-relaxed text-stone-300">
+              <p className="text-xs leading-relaxed text-stone-400 sm:text-stone-300">
                 {feature.description}
               </p>
             </div>
           ))}
         </div>
+
       </div>
     </section>
   );

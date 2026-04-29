@@ -787,23 +787,68 @@ const ProductModal = ({
         </select>
       </div>
 
-      <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 md:col-span-2">
-        <input
-          type="checkbox"
-          checked={values.isSpecial}
-          onChange={(event) => updateField("isSpecial", event.target.checked)}
-          className="mt-1 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-        />
-        <span className="space-y-1">
-          <span className="block text-sm font-medium text-gray-700">
-            Mark as special
-          </span>
-          <span className="block text-xs text-gray-500">
-            Hide this product from normal users and expose it to special users
-            only.
-          </span>
-        </span>
-      </label>
+      <div className="md:col-span-2">
+        <button
+          type="button"
+          onClick={() => updateField("isSpecial", !values.isSpecial)}
+          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 transition-all duration-200 ${
+            values.isSpecial
+              ? "border-amber-200 bg-amber-50"
+              : "border-gray-200 bg-gray-50 hover:bg-gray-100"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            {/* Icon */}
+            <div
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors duration-200 ${
+                values.isSpecial ? "bg-amber-100" : "bg-gray-200"
+              }`}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill={values.isSpecial ? "#d97706" : "none"}
+                stroke={values.isSpecial ? "#d97706" : "#9ca3af"}
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+
+            {/* Text */}
+            <div className="text-left">
+              <p
+                className={`text-sm font-medium ${values.isSpecial ? "text-amber-800" : "text-gray-700"}`}
+              >
+                Mark as special
+              </p>
+              <p
+                className={`text-xs ${values.isSpecial ? "text-amber-600" : "text-gray-400"}`}
+              >
+                {values.isSpecial
+                  ? "Visible to special users only"
+                  : "Currently visible to all users"}
+              </p>
+            </div>
+          </div>
+
+          {/* Toggle pill */}
+          <div
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ${
+              values.isSpecial ? "bg-amber-400" : "bg-gray-300"
+            }`}
+          >
+            <div
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                values.isSpecial ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </div>
+        </button>
+      </div>
 
       <label className="space-y-2 text-sm font-medium text-gray-700 md:col-span-2">
         <span>Description</span>

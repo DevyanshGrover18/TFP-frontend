@@ -8,6 +8,7 @@ export type StoredSpecialUser = {
   name: string;
   email: string;
   isSpecial: true;
+  allowedCategories?: string[];
 };
 
 export function getStoredSpecialUser(): StoredSpecialUser | null {

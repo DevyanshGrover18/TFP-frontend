@@ -4,7 +4,11 @@ import { Download, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import OrderModal from "@/app/components/admin/orders/OrderModal";
-import { getAllOrders, type OrderRecord } from "@/app/services/orderService";
+import {
+  getAllOrders,
+  type OrderDateRange,
+  type OrderRecord,
+} from "@/app/services/orderService";
 import Pagination from "@/app/components/common/Pagination";
 import * as XLSX from "xlsx";
 
@@ -23,9 +27,28 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function toInputDate(value: Date) {
+  const year = value.getFullYear();
+  const month = `${value.getMonth() + 1}`.padStart(2, "0");
+  const day = `${value.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getDefaultRange(): OrderDateRange {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 29);
+
+  return {
+    startDate: toInputDate(start),
+    endDate: toInputDate(end),
+  };
+}
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [range, setRange] = useState<OrderDateRange>(getDefaultRange);
   const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
   const [roleFilter, setRoleFilter] = useState<"all" | "special" | "user">(
     "all",
@@ -40,7 +63,7 @@ export default function OrdersPage() {
     const loadOrders = async () => {
       try {
         setIsLoading(true);
-        const response = await getAllOrders();
+        const response = await getAllOrders(range);
         setOrders(response.orders ?? []);
       } catch (loadError) {
         toast.error(
@@ -53,12 +76,12 @@ export default function OrdersPage() {
       }
     };
     void loadOrders();
-  }, []);
+  }, [range]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [roleFilter, statusFilter]);
+  }, [roleFilter, statusFilter, range]);
 
   function handleStatusUpdate(
     orderId: string,
@@ -137,6 +160,51 @@ export default function OrdersPage() {
         </span>
       </div>
 
+      <div>
+        <div className="flex flex-wrap justify-between items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-end gap-3 px-4 py-3 shadow-sm">
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-widest text-gray-400">
+              Start
+              <input
+                type="date"
+                value={range.startDate}
+                max={range.endDate}
+                onChange={(event) =>
+                  setRange((prev) => ({
+                    ...prev,
+                    startDate: event.target.value,
+                  }))
+                }
+                className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium normal-case tracking-normal text-gray-700 outline-none focus:border-indigo-400"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-widest text-gray-400">
+              End
+              <input
+                type="date"
+                value={range.endDate}
+                min={range.startDate}
+                onChange={(event) =>
+                  setRange((prev) => ({
+                    ...prev,
+                    endDate: event.target.value,
+                  }))
+                }
+                className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium normal-case tracking-normal text-gray-700 outline-none focus:border-indigo-400"
+              />
+            </label>
+          </div>
+          <button
+            onClick={handleDownloadExcel}
+            disabled={filteredOrders.length === 0}
+            className="cursor-pointer flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Download size={14} />
+            Export Excel
+          </button>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         {/* Role filter */}
@@ -186,14 +254,6 @@ export default function OrdersPage() {
             </button>
           ))}
         </div>
-        <button
-          onClick={handleDownloadExcel}
-          disabled={filteredOrders.length === 0}
-          className="cursor-pointer flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <Download size={14} />
-          Export Excel
-        </button>
       </div>
 
       <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">

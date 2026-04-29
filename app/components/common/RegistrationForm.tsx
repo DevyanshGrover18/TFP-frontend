@@ -407,6 +407,7 @@ export default function RegistrationForm() {
             name: response.user.name,
             email: response.user.email,
             isSpecial: true,
+            allowedCategories: specialUser?.allowedCategories ?? [],
           });
         } else {
           storeUser({
@@ -421,8 +422,6 @@ export default function RegistrationForm() {
       console.log(orderResponse);
       if (orderResponse.success) {
         await sendOrderSuccessMail(
-          orderResponse.order?.customerName,
-          orderResponse.order?.email,
           orderResponse.order?.id,
         );
       }

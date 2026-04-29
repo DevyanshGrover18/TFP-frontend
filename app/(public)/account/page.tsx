@@ -228,6 +228,7 @@ export default function AccountPage() {
             name: response.user.name,
             email: response.user.email,
             isSpecial: true,
+            allowedCategories: specialUser?.allowedCategories ?? [],
           });
         } else {
           storeUser({
