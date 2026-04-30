@@ -167,20 +167,7 @@ const Overview: React.FC = () => {
               <p className="text-2xl font-bold leading-none text-gray-900">
                 {isLoading ? "..." : stat.value}
               </p>
-              <div className="mt-1.5 flex items-center gap-1">
-                {stat.up ? (
-                  <TrendingUp size={12} className="text-emerald-500" />
-                ) : (
-                  <TrendingDown size={12} className="text-red-400" />
-                )}
-                <span
-                  className={`text-xs font-medium ${
-                    stat.up ? "text-emerald-600" : "text-red-500"
-                  }`}
-                >
-                  {stat.delta} in range
-                </span>
-              </div>
+              
             </div>
           </div>
         ))}
