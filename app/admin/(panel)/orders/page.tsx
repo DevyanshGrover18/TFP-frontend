@@ -83,15 +83,12 @@ export default function OrdersPage() {
     setCurrentPage(1);
   }, [roleFilter, statusFilter, range]);
 
-  function handleStatusUpdate(
-    orderId: string,
-    newStatus: OrderRecord["status"],
-  ) {
+  function handleOrderUpdate(updatedOrder: OrderRecord) {
     setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+      prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o)),
     );
     setSelectedOrder((prev) =>
-      prev?.id === orderId ? { ...prev, status: newStatus } : prev,
+      prev?.id === updatedOrder.id ? updatedOrder : prev,
     );
   }
 
@@ -366,7 +363,7 @@ export default function OrdersPage() {
         isOpen={selectedOrder !== null}
         order={selectedOrder}
         onClose={() => setSelectedOrder(null)}
-        onStatusUpdate={handleStatusUpdate}
+        onUpdate={handleOrderUpdate}
       />
     </section>
   );

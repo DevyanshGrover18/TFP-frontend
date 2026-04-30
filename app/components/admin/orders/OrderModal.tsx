@@ -14,7 +14,7 @@ type OrderModalProps = {
   isOpen: boolean;
   order: OrderRecord | null;
   onClose: () => void;
-  onStatusUpdate?: (orderId: string, newStatus: OrderRecord["status"]) => void;
+  onUpdate?: (updatedOrder: OrderRecord) => void;
 };
 
 function formatDate(value: string) {
@@ -55,7 +55,7 @@ export default function OrderModal({
   isOpen,
   order,
   onClose,
-  onStatusUpdate,
+  onUpdate,
 }: OrderModalProps) {
   const [currentStatus, setCurrentStatus] = useState<OrderStatus>(
     (order?.status as OrderStatus) ?? "Pending",
@@ -70,7 +70,7 @@ export default function OrderModal({
     }
     // Populate fields from order if they exist, otherwise start empty
     setFields(order?.fields ?? []);
-  }, [order?.id, order?.status]);
+  }, [order?.id, order?.status, order?.fields]);
 
   if (!isOpen || !order) {
     return null;
@@ -84,9 +84,11 @@ export default function OrderModal({
     const newStatus = e.target.value as OrderStatus;
     setIsUpdating(true);
     try {
-      await updateOrderStatus(order!.id, newStatus);
+      const response = await updateOrderStatus(order!.id, newStatus);
       setCurrentStatus(newStatus);
-      onStatusUpdate?.(order!.id, newStatus);
+      if (response.order) {
+        onUpdate?.(response.order);
+      }
       toast.success("Order status updated successfully");
     } catch (err) {
       toast.error(
@@ -124,7 +126,10 @@ export default function OrderModal({
 
     setIsSavingFields(true);
     try {
-      await updateOrderStatus(order!.id, undefined, fields);
+      const response = await updateOrderStatus(order!.id, undefined, fields);
+      if (response.order) {
+        onUpdate?.(response.order);
+      }
       toast.success("Fields saved successfully");
     } catch (err) {
       toast.error(
@@ -346,7 +351,7 @@ export default function OrderModal({
                     >
                       <input
                         type="text"
-                        placeholder="e.g. Fabric type"
+                        placeholder="e.g. Shipment ID"
                         value={field.key}
                         onChange={(e) =>
                           handleFieldChange(index, "key", e.target.value)
@@ -355,7 +360,7 @@ export default function OrderModal({
                       />
                       <input
                         type="text"
-                        placeholder="e.g. Cotton"
+                        placeholder="e.g. ABC-001"
                         value={field.value}
                         onChange={(e) =>
                           handleFieldChange(index, "value", e.target.value)
@@ -372,18 +377,15 @@ export default function OrderModal({
                   ))}
                 </div>
               )}
-
-              {fields.length > 0 && (
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={handleSaveFields}
-                    disabled={isSavingFields}
-                    className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSavingFields ? "Saving…" : "Save fields"}
-                  </button>
-                </div>
-              )}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={handleSaveFields}
+                  disabled={isSavingFields}
+                  className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSavingFields ? "Saving…" : "Save fields"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

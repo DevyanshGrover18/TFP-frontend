@@ -112,7 +112,9 @@ export const updateOrderStatus = async (
   status?: string,
   fields?: { key: string; value: string }[],
 ) => {
-  return fetchApi<{ success?: string; message?: string }>(`/orders/${id}`, {
+  return fetchApi<{ success?: string; message?: string; order?: OrderRecord }>(
+    `/orders/${id}`,
+    {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
