@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
-import SpecialUserLoginModal from "@/app/components/specialUsers/SpecialUserLoginModal";
+import SpecialUserLoginModal from "@/app/components/special/SpecialUserLoginModal";
 
 export default function SpecialAccessGate({
   children,

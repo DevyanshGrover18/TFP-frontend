@@ -74,7 +74,10 @@ export default function SignupPage() {
                   Full Name
                 </span>
                 <div className="relative">
-                  <UserRound className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secondary" size={16} />
+                  <UserRound
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secondary"
+                    size={16}
+                  />
                   <input
                     type="text"
                     value={name}
@@ -90,7 +93,10 @@ export default function SignupPage() {
                   Email
                 </span>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secondary" size={16} />
+                  <Mail
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secondary"
+                    size={16}
+                  />
                   <input
                     type="email"
                     value={email}
@@ -106,7 +112,10 @@ export default function SignupPage() {
                   Password
                 </span>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secondary" size={16} />
+                  <Lock
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secondary"
+                    size={16}
+                  />
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
@@ -118,7 +127,9 @@ export default function SignupPage() {
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary transition hover:text-primary"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -126,50 +137,31 @@ export default function SignupPage() {
               </label>
 
               <button
-                type="submit"
+                className="w-full rounded-2xl px-5 py-3 font-sans text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:opacity-90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
                 disabled={loading}
-                className="w-full rounded-2xl bg-primary px-5 py-3 font-sans text-sm font-semibold uppercase tracking-[0.18em] text-neutral transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #E8654A 0%, #E8426A 100%)",
+                }}
               >
-                {loading ? "Creating account..." : "Create Account"}
+                {loading ? "Creating Account..." : "Create Account"}
               </button>
             </form>
 
             <p className="mt-6 font-sans text-sm text-primary/65">
               Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-secondary transition hover:text-primary">
+              <Link
+                href="/login"
+                className="font-semibold text-secondary transition hover:text-primary"
+              >
                 Sign in
               </Link>
             </p>
           </div>
         </section>
 
-        <section className="relative hidden min-h-[680px] overflow-hidden bg-primary lg:block">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(186,164,133,0.38),transparent_28%),linear-gradient(145deg,#1a1b2e_0%,#232741_48%,#30345a_100%)]" />
-          <div className="relative flex h-full flex-col justify-between p-10 text-neutral">
-            <div className="max-w-md">
-              <p className="font-sans text-xs uppercase tracking-[0.35em] text-tertiary">
-                Membership
-              </p>
-              <h2 className="mt-6 font-serif text-5xl italic leading-tight">
-                Build a single account for browsing, saving, and ordering.
-              </h2>
-            </div>
-
-            <div className="grid gap-4">
-              {[
-                "Save product references for later follow-up.",
-                "Access a cleaner sign-in flow on future visits.",
-                "Keep your account separate from the admin portal.",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="rounded-[1.5rem] border border-white/10 bg-white/6 p-5 backdrop-blur-sm"
-                >
-                  <p className="font-sans text-sm leading-6 text-neutral/85">{item}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+        <section className="relative hidden min-h-[480px] overflow-hidden lg:block">
+          <img src="/tfb-side.png" alt="Side Panel" />
         </section>
       </div>
     </main>

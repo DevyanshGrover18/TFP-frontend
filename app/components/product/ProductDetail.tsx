@@ -76,13 +76,29 @@ const VariantCard = ({ variant, isSelected, onClick }: VariantCardProps) => (
   <button
     type="button"
     onClick={onClick}
-    className={`flex w-full items-center gap-3 rounded-[3px] border bg-neutral px-3 py-2.5 text-left transition-all ${
-      isSelected
-        ? "border-[#171512] shadow-[0_0_0_1px_#171512]"
-        : "border-[#e2dbd0] hover:border-[#b8b0a6]"
-    }`}
+    className="flex w-full items-center gap-3 text-left transition-all"
+    style={{
+      borderRadius: "12px",
+      border: isSelected
+        ? "1.5px solid #E8654A"
+        : "1px solid #f0e0dc",
+      background: isSelected
+        ? "linear-gradient(135deg, rgba(232,101,74,0.06) 0%, rgba(232,66,106,0.06) 100%)"
+        : "#fdf5f3",
+      padding: "10px 12px",
+      boxShadow: isSelected ? "0 0 0 3px rgba(232,101,74,0.12)" : "none",
+    }}
   >
-    <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xs border border-[#ddd5ca] bg-neutral">
+    <div
+      className="shrink-0 overflow-hidden"
+      style={{
+        width: 56,
+        height: 56,
+        borderRadius: "10px",
+        border: "1px solid #f0e0dc",
+        background: "#fff",
+      }}
+    >
       <img
         src={variant.mainImage}
         alt={variant.name}
@@ -90,13 +106,55 @@ const VariantCard = ({ variant, isSelected, onClick }: VariantCardProps) => (
       />
     </div>
     <div className="min-w-0 flex-1">
-      <p className="text-sm font-serif font-semibold text-[#171512] truncate">
+      <p
+        className="truncate"
+        style={{
+          fontFamily: "'Georgia', serif",
+          fontStyle: "italic",
+          fontSize: "14px",
+          fontWeight: 600,
+          color: "#1a1a1a",
+        }}
+      >
         {variant.name}
       </p>
-      <p className="text-xs uppercase tracking-[0.16em] text-[#9a9088]">
-        {variant.sku} | {variant.colorCode}
+      <p
+        style={{
+          fontSize: "10px",
+          fontFamily: "'DM Sans', sans-serif",
+          textTransform: "uppercase",
+          letterSpacing: "0.18em",
+          color: "#d94f4f",
+          marginTop: 2,
+        }}
+      >
+        {variant.sku} · {variant.colorCode}
       </p>
     </div>
+    {isSelected && (
+      <span
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: "50%",
+          background: "linear-gradient(135deg, #E8654A 0%, #E8426A 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+          <path
+            d="M2 6l3 3 5-5"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+    )}
   </button>
 );
 
@@ -150,13 +208,11 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
   }
 
   const handleAddToCart = async () => {
-    console.log("auth state:", { user, specialUser, isSpecialSession });
     if (isSoldOut) {
       toast.error("This product is sold out.");
       return;
     }
 
-    // Get active user from context (works for both regular and special users)
     const activeUserId = user?.id ?? specialUser?.id;
 
     if (!activeUserId) {
@@ -167,12 +223,10 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
 
     try {
       setIsAddingToCart(true);
-
       const response = await addCartItem({
         productId: product._id,
         variantId: selectedVariant?.variantId ?? null,
       });
-
       toast.success(response.message ?? "Item added to cart");
       setCount((prev) => prev + 1);
     } catch (error) {
@@ -183,62 +237,90 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
       setIsAddingToCart(false);
     }
   };
+
   return (
     <div
-      className="bg-neutral text-[#171512] min-h-screen"
-      style={{ fontFamily: "system-ui, sans-serif" }}
+      className="min-h-screen"
+      style={{ background: "#fff", fontFamily: "'DM Sans', sans-serif" }}
     >
       <div className="mx-auto max-w-[1260px] px-4 sm:px-6 pb-24">
+
         {/* ── Breadcrumb ───────────────────────────────────────────────── */}
-        <nav className="flex items-center flex-wrap gap-2 text-xs uppercase tracking-[0.22em] font-semibold text-[#9a9088] my-8 sm:my-10">
+        <nav
+          className="flex items-center flex-wrap gap-2 my-8 sm:my-10"
+          style={{
+            fontSize: "10px",
+            fontFamily: "'DM Sans', sans-serif",
+            textTransform: "uppercase",
+            letterSpacing: "0.22em",
+            fontWeight: 600,
+            color: "#bbb",
+          }}
+        >
           <Link
             href="/"
-            className="hover:text-[#171512] transition-colors duration-200"
+            style={{ color: "#bbb", transition: "color 0.2s" }}
+            className="hover:text-[#d94f4f]"
           >
             Home
           </Link>
-          <span className="text-[#ddd6cc]">/</span>
-          <span className="cursor-not-allowed">{product.categoryId.name}</span>
-          <span className="text-[#ddd6cc]">/</span>
-          <span className="cursor-not-allowed">
+          <span style={{ color: "#f0e0dc" }}>/</span>
+          <span style={{ color: "#bbb", cursor: "not-allowed" }}>
+            {product.categoryId.name}
+          </span>
+          <span style={{ color: "#f0e0dc" }}>/</span>
+          <span style={{ color: "#bbb", cursor: "not-allowed" }}>
             {product.subCategoryId.name}
           </span>
-          <span className="text-[#ddd6cc]">/</span>
+          <span style={{ color: "#f0e0dc" }}>/</span>
           <Link
             href={`/products?subsubcategory=${product.subSubCategoryId.id}`}
-            className="text-[#171512] hover:text-[#9a9088] transition-colors duration-200"
+            style={{ color: "#d94f4f" }}
           >
             {product.subSubCategoryId.name}
           </Link>
         </nav>
 
         {/* ── HERO ─────────────────────────────────────────────────────── */}
-        <section className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 lg:gap-14 items-start">
+        <section className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-14 items-start">
+
           {/* LEFT — main image + thumbnails */}
           <div className="flex flex-col gap-4 sm:gap-5">
-            <div className="overflow-hidden rounded-sm bg-[#e8e2d6]">
+            <div
+              className="overflow-hidden"
+              style={{ borderRadius: "20px", background: "#fdf5f3", border: "1px solid #f0e0dc" }}
+            >
               <img
                 src={activeImage}
                 alt={product.name}
-                className="w-full aspect-[1.05] hover:scale-105 object-cover transition-transform duration-300"
+                className="w-full object-cover hover:scale-105 transition-transform duration-300"
+                style={{ aspectRatio: "1.05" }}
               />
             </div>
-            {/* Thumbnails — horizontal scroll on mobile */}
-            <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-hide">
+
+            {/* Thumbnails */}
+            <div className="flex gap-3 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap">
               {activeVariantImages.map((src) => (
                 <button
                   key={`${product._id}-${src}`}
                   onClick={() => setActiveImage(src)}
-                  className={`shrink-0 overflow-hidden rounded-xs transition-all duration-200 ${
-                    activeImage === src
-                      ? "ring-2 ring-[#171512] ring-offset-1"
-                      : "opacity-70 hover:opacity-100"
-                  }`}
+                  className="shrink-0 overflow-hidden transition-all duration-200"
+                  style={{
+                    borderRadius: "12px",
+                    border: activeImage === src
+                      ? "2px solid #E8654A"
+                      : "1px solid #f0e0dc",
+                    opacity: activeImage === src ? 1 : 0.65,
+                    boxShadow: activeImage === src
+                      ? "0 0 0 3px rgba(232,101,74,0.15)"
+                      : "none",
+                  }}
                 >
                   <img
                     src={src}
                     alt={product.name}
-                    className="w-20 sm:w-28 md:w-32 aspect-[1.05] object-cover hover:scale-105 transition-transform duration-300"
+                    className="object-cover hover:scale-105 transition-transform duration-300"
+                    style={{ width: 80, aspectRatio: "1.05" }}
                   />
                 </button>
               ))}
@@ -247,25 +329,53 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
 
           {/* RIGHT — product info */}
           <div className="pt-0 lg:pt-1">
-            {/* SKU */}
-            <p className="text-[10px] uppercase tracking-[0.26em] text-[#9a9088]">
-              SKU {product.sku}
+
+            {/* Label + SKU */}
+            <p
+              style={{
+                fontSize: "10px",
+                fontFamily: "'DM Sans', sans-serif",
+                textTransform: "uppercase",
+                letterSpacing: "0.28em",
+                fontWeight: 600,
+                color: "#d94f4f",
+              }}
+            >
+              Live Inventory · SKU {product.sku}
             </p>
 
             {/* Name */}
             <h1
-              className="mt-2 text-4xl sm:text-5xl lg:text-[3.4rem] font-bold italic leading-[0.92] tracking-[-0.03em] text-[#11100f]"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+              className="mt-2 leading-[0.92] tracking-[-0.03em]"
+              style={{
+                fontFamily: "'Georgia', serif",
+                fontStyle: "italic",
+                fontSize: "clamp(2.4rem, 5vw, 3.4rem)",
+                fontWeight: 700,
+                color: "#1a1a1a",
+              }}
             >
               {product.name}
             </h1>
 
             {/* Variants */}
-            <div className="mt-7 sm:mt-8">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#7a736c] border-b border-[#ddd6cc] pb-2.5">
+            <div className="mt-8">
+              <p
+                style={{
+                  fontSize: "10px",
+                  fontFamily: "'DM Sans', sans-serif",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.28em",
+                  fontWeight: 600,
+                  color: "#d94f4f",
+                  borderBottom: "1px solid #f0e0dc",
+                  paddingBottom: "10px",
+                  marginBottom: "12px",
+                }}
+              >
                 Colors &amp; Variants [{variantOptions.length}]
               </p>
-              <div className="mt-3 flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 {variantOptions.map((v) => (
                   <VariantCard
                     key={v.id}
@@ -286,7 +396,23 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
               type="button"
               onClick={handleAddToCart}
               disabled={isAddingToCart || isSoldOut}
-              className="mt-7 sm:mt-8 w-full cursor-pointer rounded-sm bg-[#0d0c0b] px-6 py-3.5 text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-[#2c2924] transition-colors disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-8 w-full flex items-center justify-center gap-2 transition-opacity"
+              style={{
+                borderRadius: "14px",
+                padding: "14px 24px",
+                fontSize: "13px",
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+                color: "#fff",
+                background: isSoldOut
+                  ? "#ccc"
+                  : "linear-gradient(135deg, #E8654A 0%, #E8426A 100%)",
+                border: "none",
+                cursor: isSoldOut || isAddingToCart ? "not-allowed" : "pointer",
+                opacity: isAddingToCart ? 0.75 : 1,
+              }}
             >
               {isSoldOut ? (
                 "Sold Out"
@@ -294,43 +420,107 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
                 "Adding..."
               ) : (
                 <>
-                  Add to cart
-                  <span className="text-[15px] leading-none">→</span>
+                  Add to Cart
+                  <span style={{ fontSize: "16px", lineHeight: 1 }}>→</span>
                 </>
               )}
             </button>
 
             {/* Badges */}
-            <div className="mt-5 flex flex-wrap gap-2">
-              {visibleBadges.map((badge) => (
-                <span
-                  key={badge}
-                  className="rounded-full border border-[#ddd0ba] bg-[#ede3d4] px-3 py-1 text-[9px] uppercase tracking-[0.2em] text-[#8a7a67]"
-                >
-                  {badge}
-                </span>
-              ))}
-            </div>
+            {visibleBadges.length > 0 && (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {visibleBadges.map((badge) => (
+                  <span
+                    key={badge}
+                    style={{
+                      borderRadius: "999px",
+                      border: "1px solid #f0e0dc",
+                      background: "#fdf5f3",
+                      padding: "4px 12px",
+                      fontSize: "9px",
+                      fontFamily: "'DM Sans', sans-serif",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.2em",
+                      color: "#d94f4f",
+                    }}
+                  >
+                    {badge}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
         {/* ── SPECS + PRODUCT DETAILS ──────────────────────────────────── */}
         <section className="mt-10 sm:mt-14 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-5">
+
           {/* Specifications */}
-          <div className="rounded-md shadow-md bg-white p-6 sm:p-8">
+          <div
+            style={{
+              borderRadius: "20px",
+              background: "#fdf5f3",
+              border: "1px solid #f0e0dc",
+              padding: "28px 32px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "10px",
+                fontFamily: "'DM Sans', sans-serif",
+                textTransform: "uppercase",
+                letterSpacing: "0.28em",
+                fontWeight: 600,
+                color: "#d94f4f",
+              }}
+            >
+              Technical Data
+            </p>
             <h2
-              className="text-2xl sm:text-[1.6rem] font-bold text-[#11100f]"
-              style={{ fontFamily: "Georgia, serif" }}
+              className="mt-2"
+              style={{
+                fontFamily: "'Georgia', serif",
+                fontStyle: "italic",
+                fontSize: "1.6rem",
+                fontWeight: 700,
+                color: "#1a1a1a",
+              }}
             >
               Specifications
             </h2>
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 sm:gap-y-6">
+            <div
+              className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8"
+              style={{ gap: "20px 32px" }}
+            >
               {product.specifications.map((row) => (
-                <div key={row.key}>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-[#9a9088] mb-1">
+                <div
+                  key={row.key}
+                  style={{
+                    borderBottom: "1px solid #f0e0dc",
+                    paddingBottom: "14px",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: "10px",
+                      fontFamily: "'DM Sans', sans-serif",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.2em",
+                      color: "#d94f4f",
+                      fontWeight: 600,
+                      marginBottom: 4,
+                    }}
+                  >
                     {row.key}
                   </p>
-                  <p className="text-base sm:text-lg font-medium text-[#1b1916] leading-[1.4]">
+                  <p
+                    style={{
+                      fontSize: "15px",
+                      fontFamily: "'Georgia', serif",
+                      color: "#1a1a1a",
+                      lineHeight: 1.4,
+                    }}
+                  >
                     {row.value}
                   </p>
                 </div>
@@ -339,60 +529,143 @@ const ProductDetail = ({ product }: { product: ProductRecord }) => {
           </div>
 
           {/* Product Details */}
-          <div className="rounded-md border border-[#ddd6cc] bg-[#ede8e0] p-6 sm:p-8">
+          <div
+            style={{
+              borderRadius: "20px",
+              background: "linear-gradient(135deg, #E8654A 0%, #E8426A 100%)",
+              padding: "28px 32px",
+              color: "#fff",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "10px",
+                fontFamily: "'DM Sans', sans-serif",
+                textTransform: "uppercase",
+                letterSpacing: "0.28em",
+                fontWeight: 600,
+                color: "rgba(255,255,255,0.55)",
+              }}
+            >
+              Trade Notes
+            </p>
             <h2
-              className="text-2xl sm:text-[1.6rem] font-bold italic text-[#11100f]"
-              style={{ fontFamily: "Georgia, serif" }}
+              className="mt-2"
+              style={{
+                fontFamily: "'Georgia', serif",
+                fontStyle: "italic",
+                fontSize: "1.6rem",
+                fontWeight: 700,
+                color: "#fff",
+              }}
             >
               Product Details
             </h2>
-            <div className="mt-5">
-              <p
-                className="text-[13px] italic leading-[1.8] text-[#4a443d]"
-                style={{ fontFamily: "Georgia, serif" }}
+
+            <p
+              className="mt-5"
+              style={{
+                fontFamily: "'Georgia', serif",
+                fontStyle: "italic",
+                fontSize: "13px",
+                lineHeight: 1.8,
+                color: "rgba(255,255,255,0.85)",
+              }}
+            >
+              &quot;{product.description || "No description available."}&quot;
+            </p>
+
+            <p
+              className="mt-4"
+              style={{
+                fontSize: "12px",
+                lineHeight: 1.7,
+                color: "rgba(255,255,255,0.6)",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              Prepared for trade review with backend-managed imagery, variant
+              references, and technical data for sourcing and bulk purchasing.
+            </p>
+
+            <div
+              className="mt-6 flex items-center gap-2 pt-5"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.2)" }}
+            >
+              <span
+                className="flex shrink-0 items-center justify-center"
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.25)",
+                }}
               >
-                &quot;{product.description || "No description available."}&quot;
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                  <path
+                    d="M2 6l3 3 5-5"
+                    stroke="white"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <span
+                style={{
+                  fontSize: "9px",
+                  fontFamily: "'DM Sans', sans-serif",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.22em",
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.85)",
+                }}
+              >
+                Mill Certified Quality
+              </span>
+            </div>
+
+            <p
+              className="mt-3"
+              style={{
+                fontSize: "11px",
+                lineHeight: 1.6,
+                color: "rgba(255,255,255,0.55)",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              Every bolt is inspected by our master weavers before leaving the
+              facility. Wholesale pricing is calculated based on current volume
+              and trade status.
+            </p>
+
+            <div className="mt-5 flex items-center justify-between">
+              <p
+                style={{
+                  fontSize: "10px",
+                  color: "rgba(255,255,255,0.5)",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                Minimum order: on req.
               </p>
-
-              <p className="mt-4 text-[12px] leading-[1.7] text-[#6b635c]">
-                Prepared for trade review with backend-managed imagery, variant
-                references, and technical data for sourcing and bulk purchasing.
-              </p>
-
-              <div className="mt-6 flex items-center gap-2 border-t border-[#d8d0c4] pt-5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4a7c59]">
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                    <path
-                      d="M2 6l3 3 5-5"
-                      stroke="white"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-                <span className="text-[9px] uppercase tracking-[0.22em] font-semibold text-[#4a443d]">
-                  Mill Certified Quality
-                </span>
-              </div>
-
-              <p className="mt-3 text-[11px] leading-[1.6] text-[#8a8179]">
-                Every bolt is inspected by our master weavers before leaving the
-                facility. Wholesale pricing is calculated based on current
-                volume and trade status.
-              </p>
-
-              <div className="mt-5 flex items-center justify-between">
-                <p className="text-[10px] text-[#9a9088]">
-                  Minimum order: on req.
-                </p>
-                <button
-                  type="button"
-                  className="h-6 w-6 rounded-full border border-[#c8c0b4] flex items-center justify-center text-[11px] text-[#9a9088] hover:bg-[#ddd6cc] transition-colors"
-                >
-                  ?
-                </button>
-              </div>
+              <button
+                type="button"
+                className="flex items-center justify-center transition-colors"
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  fontSize: "11px",
+                  color: "rgba(255,255,255,0.7)",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                ?
+              </button>
             </div>
           </div>
         </section>

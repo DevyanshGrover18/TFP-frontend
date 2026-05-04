@@ -34,7 +34,6 @@ const HomeSection3 = () => {
         setLoading(false);
       }
     };
-
     void fetchProducts();
   }, []);
 
@@ -47,9 +46,7 @@ const HomeSection3 = () => {
   );
 
   useEffect(() => {
-    if (currentIndex >= visibleProducts.length) {
-      setCurrentIndex(0);
-    }
+    if (currentIndex >= visibleProducts.length) setCurrentIndex(0);
   }, [currentIndex, visibleProducts.length]);
 
   const hasProducts = visibleProducts.length > 0;
@@ -66,60 +63,128 @@ const HomeSection3 = () => {
   };
 
   return (
-    <section className="px-4 pb-16 sm:px-6 lg:px-10">
+    <section
+      className="px-4 pb-16 pt-2 sm:px-6 lg:px-10"
+      style={{
+        background: "linear-gradient(160deg, #fdf8f4 0%, #ffffff 50%, #fef2ea 100%)",
+      }}
+    >
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
 
-          {/* Left: editorial image — full width on mobile, 8 cols on desktop */}
-          <div className="relative overflow-hidden rounded-4xl bg-stone-200 lg:col-span-8">
+          {/* ── Left: editorial image ── */}
+          <div className="relative overflow-hidden rounded-4xl lg:col-span-8" style={{ background: "#e8d8c8" }}>
             <Image
               src="/section3.jpg"
               alt="Featured fabric collection"
               width={1400}
               height={900}
-              // On mobile: fixed aspect ratio so it doesn't collapse.
-              // On desktop: fills the grid row height naturally.
               className="w-full object-cover"
               style={{ aspectRatio: "4/3" }}
               priority={false}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/10 to-transparent" />
+
+            {/* Layered overlays — warm left-side gradient */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: "linear-gradient(to right, rgba(10,6,2,0.62) 0%, rgba(10,6,2,0.18) 55%, transparent 100%)",
+              }}
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background: "linear-gradient(to top, rgba(10,6,2,0.55) 0%, transparent 50%)",
+              }}
+            />
+            {/* Subtle coral wash bottom-left */}
+            <div
+              className="absolute bottom-0 left-0 pointer-events-none"
+              style={{
+                width: "45%",
+                height: "40%",
+                background: "radial-gradient(ellipse at bottom left, rgba(200,69,26,0.2) 0%, transparent 70%)",
+              }}
+            />
+
+            {/* Text content */}
             <div className="absolute bottom-0 left-0 max-w-xl p-5 sm:p-8">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/70 sm:text-xs">
-                Editorial Selection
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white sm:mt-3 sm:text-3xl lg:text-4xl">
+              {/* Eyebrow */}
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rotate-45 flex-shrink-0" style={{ background: "#e8783c" }} />
+                <p
+                  className="text-[10px] font-semibold uppercase tracking-[0.26em] sm:text-[11px]"
+                  style={{ color: "#e8783c", fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Editorial Selection
+                </p>
+              </div>
+
+              <h2
+                className="text-2xl leading-tight sm:text-3xl lg:text-4xl"
+                style={{
+                  fontFamily: "'Playfair Display', 'Georgia', serif",
+                  fontWeight: 400,
+                  fontStyle: "italic",
+                  color: "#f5ede4",
+                  letterSpacing: "-0.02em",
+                }}
+              >
                 Fabric stories built around texture, color, and detail.
               </h2>
-              <p className="mt-2 text-sm leading-6 text-white/80 sm:mt-3 sm:text-base">
+
+              {/* Divider */}
+              <div
+                className="my-3 h-[1.5px] w-10 rounded-full"
+                style={{ background: "linear-gradient(90deg, #c8451a, #e8783c)" }}
+              />
+
+              <p
+                className="text-sm leading-relaxed sm:text-base"
+                style={{
+                  color: "rgba(245,237,228,0.7)",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
                 Pair the campaign image with a focused product highlight so the
                 section feels structured and easy to scan.
               </p>
             </div>
           </div>
 
-          {/* Right: product carousel — full width on mobile, 4 cols on desktop */}
+          {/* ── Right: product carousel ── */}
           <div className="lg:col-span-4">
             {loading ? (
-              <div className="overflow-hidden rounded-[28px] border border-stone-200 bg-white p-3">
-                <div className="aspect-square animate-pulse rounded-[22px] bg-stone-200" />
+              <div
+                className="overflow-hidden rounded-[28px] p-3"
+                style={{
+                  border: "1px solid rgba(200,69,26,0.1)",
+                  background: "#fff",
+                }}
+              >
+                <div
+                  className="aspect-square animate-pulse rounded-[22px]"
+                  style={{ background: "linear-gradient(135deg, #f5ede4, #edddd0)" }}
+                />
                 <div className="space-y-3 px-2 pb-2 pt-4">
-                  <div className="h-3 w-20 animate-pulse rounded-full bg-stone-200" />
-                  <div className="h-4 w-full animate-pulse rounded-full bg-stone-200" />
-                  <div className="h-4 w-2/3 animate-pulse rounded-full bg-stone-200" />
+                  <div className="h-3 w-20 animate-pulse rounded-full" style={{ background: "#edddd0" }} />
+                  <div className="h-4 w-full animate-pulse rounded-full" style={{ background: "#edddd0" }} />
+                  <div className="h-4 w-2/3 animate-pulse rounded-full" style={{ background: "#edddd0" }} />
                 </div>
               </div>
             ) : hasError ? (
-              <div className="rounded-[28px] border border-red-100 bg-red-50 px-5 py-8 text-center text-sm text-red-700">
+              <div
+                className="rounded-[28px] px-5 py-8 text-center text-sm"
+                style={{
+                  background: "rgba(200,69,26,0.05)",
+                  border: "1px solid rgba(200,69,26,0.15)",
+                  color: "#c8451a",
+                }}
+              >
                 Unable to load the featured product right now.
               </div>
             ) : activeProduct ? (
               <div className="space-y-4">
-                {/*
-                  On mobile: limit the card width so the product image
-                  doesn't stretch to full screen width. Centered with auto margins.
-                  On desktop: fills the 4-col panel naturally.
-                */}
                 <div className="mx-auto w-full max-w-sm lg:max-w-none">
                   <ProductCard
                     name={activeProduct.name}
@@ -138,8 +203,9 @@ const HomeSection3 = () => {
                   />
                 </div>
 
-                {/* Dots + prev/next controls */}
+                {/* Dots + prev/next */}
                 <div className="mx-auto flex w-full max-w-sm items-center justify-between lg:max-w-none">
+                  {/* Dots */}
                   <div className="flex gap-2">
                     {visibleProducts.map((product, index) => (
                       <button
@@ -147,37 +213,83 @@ const HomeSection3 = () => {
                         type="button"
                         aria-label={`Show product ${index + 1}`}
                         onClick={() => setCurrentIndex(index)}
-                        className={`h-2.5 rounded-full transition-all ${
-                          index === currentIndex
-                            ? "w-6 bg-stone-900"
-                            : "w-2.5 bg-stone-300"
-                        }`}
+                        className="rounded-full transition-all duration-300"
+                        style={{
+                          height: "5px",
+                          width: index === currentIndex ? "24px" : "5px",
+                          background:
+                            index === currentIndex
+                              ? "linear-gradient(90deg, #c8451a, #e8783c)"
+                              : "rgba(200,69,26,0.2)",
+                        }}
                       />
                     ))}
                   </div>
 
+                  {/* Arrows */}
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={showPrev}
                       aria-label="Previous product"
-                      className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stone-200 text-xl text-stone-700 transition hover:bg-stone-50"
+                      className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                      style={{
+                        border: "1px solid rgba(200,69,26,0.25)",
+                        background: "#fff",
+                        color: "#c8451a",
+                        fontSize: "18px",
+                        lineHeight: 1,
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = "linear-gradient(135deg, #c8451a, #e8783c)";
+                        e.currentTarget.style.color = "#fff";
+                        e.currentTarget.style.borderColor = "transparent";
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = "#fff";
+                        e.currentTarget.style.color = "#c8451a";
+                        e.currentTarget.style.borderColor = "rgba(200,69,26,0.25)";
+                      }}
                     >
-                      &#8249;
+                      ‹
                     </button>
                     <button
                       type="button"
                       onClick={showNext}
                       aria-label="Next product"
-                      className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stone-200 text-xl text-stone-700 transition hover:bg-stone-50"
+                      className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                      style={{
+                        border: "1px solid rgba(200,69,26,0.25)",
+                        background: "#fff",
+                        color: "#c8451a",
+                        fontSize: "18px",
+                        lineHeight: 1,
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = "linear-gradient(135deg, #c8451a, #e8783c)";
+                        e.currentTarget.style.color = "#fff";
+                        e.currentTarget.style.borderColor = "transparent";
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = "#fff";
+                        e.currentTarget.style.color = "#c8451a";
+                        e.currentTarget.style.borderColor = "rgba(200,69,26,0.25)";
+                      }}
                     >
-                      &#8250;
+                      ›
                     </button>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="rounded-[28px] border border-stone-200 bg-stone-50 px-5 py-8 text-center text-sm text-stone-600">
+              <div
+                className="rounded-[28px] px-5 py-8 text-center text-sm"
+                style={{
+                  background: "#fff",
+                  border: "1px solid rgba(200,69,26,0.1)",
+                  color: "#7a6a60",
+                }}
+              >
                 No products are available for this section yet.
               </div>
             )}

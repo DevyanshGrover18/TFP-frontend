@@ -47,7 +47,7 @@ export default async function ProductPage({
 
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white">
       <div className="grow">
         <ProductDetail product={response.product} />
       </div>

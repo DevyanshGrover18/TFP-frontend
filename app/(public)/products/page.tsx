@@ -21,6 +21,7 @@ import {
   isProductVisibleForSession,
   sortSpecialProductsFirst,
 } from "@/app/services/catalogAccess";
+import { Check, SlidersHorizontal, X } from "lucide-react";
 
 type SidebarFilterGroup = {
   key: string;
@@ -49,15 +50,13 @@ const SUB_CATEGORY_PARAM = "subcategory";
 const SUB_SUB_CATEGORY_PARAM = "subsubcategory";
 
 const formatFilterLabel = (value: string) =>
-  value
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  value.replace(/[-_]+/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
 const getSelectedValues = (searchParams: URLSearchParams, key: string) =>
   Array.from(new Set(searchParams.getAll(key).filter(Boolean)));
 
 const getProductRefId = (value: ProductRef | undefined) =>
-  typeof value === "string" ? value : value?._id ?? value?.id;
+  typeof value === "string" ? value : (value?._id ?? value?.id);
 
 const matchesMultiValueFilter = (
   selectedValues: string[],
@@ -83,37 +82,52 @@ function SidebarFilterSection({
   if (!options.length) return null;
 
   return (
-    <div className="mt-8 border-t border-stone-200 pt-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">
+    <div className="mt-6 border-t pt-5" style={{ borderColor: "#f0e0dc" }}>
+      <p
+        className="text-[10px] font-semibold uppercase tracking-[0.24em]"
+        style={{ color: "#d94f4f", fontFamily: "'DM Sans', sans-serif" }}
+      >
         {title}
       </p>
-      <div className="mt-4 flex flex-col gap-1.5">
+      <div className="mt-3 flex flex-col gap-1">
         {options.map((option) => {
           const optionValue = option.id ?? option.value ?? option.label;
           const isActive = activeValues.includes(optionValue);
-
           return (
             <button
               key={`${paramKey}-${optionValue}`}
               type="button"
               onClick={() => onToggle(paramKey, optionValue)}
-              className={`flex items-center justify-between gap-4 rounded-lg px-3 py-2 text-left text-[11px] font-medium uppercase tracking-[0.14em] transition-colors ${
-                isActive
-                  ? "bg-stone-900 text-white"
-                  : "text-stone-600 hover:bg-stone-100"
-              }`}
+              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition-colors"
+              style={{
+                background: isActive
+                  ? "linear-gradient(135deg, #E8654A 0%, #E8426A 100%)"
+                  : "transparent",
+                color: isActive ? "#fff" : "#555",
+                fontSize: "12px",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
             >
               <span className="flex items-center gap-2">
                 <span
-                  className={`h-3 w-3 rounded-sm border ${
-                    isActive
-                      ? "border-white bg-white"
-                      : "border-stone-300 bg-transparent"
-                  }`}
-                />
-                <span>{option.label}</span>
+                  className="flex h-3 w-3 items-center justify-center rounded-sm border flex-shrink-0 text-[8px] font-bold"
+                  style={{
+                    borderColor: isActive ? "#fff" : "#ddd",
+                    background: isActive ? "#fff" : "transparent",
+                    color: "#000",
+                  }}
+                >
+                  {isActive && <Check />}
+                </span>
+
+                {option.label}
               </span>
-              <span className={isActive ? "text-white/70" : "text-stone-400"}>
+              <span
+                style={{
+                  color: isActive ? "rgba(255,255,255,0.5)" : "#bbb",
+                  fontSize: "11px",
+                }}
+              >
                 {option.count}
               </span>
             </button>
@@ -158,7 +172,6 @@ function SidebarContent({
         options={categoryOptions}
         onToggle={toggleFilter}
       />
-
       {selectedCategories.length > 0 && (
         <SidebarFilterSection
           title="Sub Categories"
@@ -168,7 +181,6 @@ function SidebarContent({
           onToggle={toggleFilter}
         />
       )}
-
       {selectedSubCategories.length > 0 && (
         <SidebarFilterSection
           title="Sub Sub Categories"
@@ -178,7 +190,6 @@ function SidebarContent({
           onToggle={toggleFilter}
         />
       )}
-
       {sidebarSpecificationGroups.map((group) => (
         <SidebarFilterSection
           key={group.key}
@@ -189,38 +200,60 @@ function SidebarContent({
           onToggle={toggleFilter}
         />
       ))}
-
       {hasActiveFilters && onClearFilters && (
         <div className="mt-6">
           <button
             type="button"
             onClick={onClearFilters}
-            className="block w-full rounded-2xl border border-stone-200 py-3 text-center text-xs font-semibold uppercase tracking-widest text-stone-600 transition-colors hover:bg-stone-50"
+            className="w-full rounded-xl py-2.5 text-center text-xs font-semibold uppercase tracking-widest transition-colors"
+            style={{
+              border: "1px solid #f0e0dc",
+              color: "#d94f4f",
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: "11px",
+            }}
           >
             Clear all filters
           </button>
         </div>
       )}
 
-      <div className="mt-8 rounded-[1.5rem] bg-stone-900 px-5 py-6 text-white">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/60">
+      {/* Help card */}
+      <div
+        className="mt-8 rounded-2xl px-5 py-6"
+        style={{
+          background: "linear-gradient(135deg, #E8654A 0%, #E8426A 100%)",
+          color: "#fff",
+        }}
+      >
+        <p
+          className="text-[10px] font-semibold uppercase tracking-[0.24em]"
+          style={{ color: "rgba(255,255,255,0.5)" }}
+        >
           Trade Support
         </p>
         <p
-          className="mt-3 text-2xl italic"
-          style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+          className="mt-3 text-xl italic"
+          style={{ fontFamily: "'Georgia', serif" }}
         >
           Need help sourcing?
         </p>
-        <p className="mt-3 text-sm leading-6 text-white/70">
-          Start with the live catalog filters, then reach out for custom
-          sourcing and bulk requirements.
+        <p
+          className="mt-2 text-xs leading-5"
+          style={{ color: "rgba(255,255,255,0.6)" }}
+        >
+          Reach out for custom sourcing and bulk requirements.
         </p>
         <button
           type="button"
-          className="mt-5 rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-900"
+          className="mt-4 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest"
+          style={{
+            background: "#fff",
+            color: "#1a1a1a",
+            fontFamily: "'DM Sans', sans-serif",
+          }}
         >
-          Contact Studio
+          Contact Us
         </button>
       </div>
     </>
@@ -278,12 +311,10 @@ export function ProductsPageDetails({
       try {
         setIsLoading(true);
         setLoadError("");
-
         const [productsResponse, filtersResponse] = await Promise.all([
           getAllProducts(),
           getProductFilters(),
         ]);
-
         setProducts(productsResponse.products ?? []);
         setFilters(filtersResponse.filters ?? EMPTY_FILTERS);
       } catch (error) {
@@ -294,14 +325,12 @@ export function ProductsPageDetails({
         setIsLoading(false);
       }
     };
-
     void fetchPageData();
   }, []);
 
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [searchParams]);
-
   useEffect(() => {
     document.body.style.overflow = isSidebarOpen ? "hidden" : "";
     return () => {
@@ -311,25 +340,21 @@ export function ProductsPageDetails({
 
   const visibleProducts = useMemo(
     () =>
-      products.filter((product) =>
-        isProductVisibleForSession(product, isSpecialSession),
-      ),
+      products.filter((p) => isProductVisibleForSession(p, isSpecialSession)),
     [products, isSpecialSession],
   );
 
   const scopedProducts = useMemo(() => {
-    const baseProducts = isSpecialCatalog
-      ? visibleProducts.filter((product) =>
-          isProductAllowedForCategoryIds(product, allowedCategoryIds),
+    const base = isSpecialCatalog
+      ? visibleProducts.filter((p) =>
+          isProductAllowedForCategoryIds(p, allowedCategoryIds),
         )
       : visibleProducts;
-
-    return isSpecialCatalog ? sortSpecialProductsFirst(baseProducts) : baseProducts;
+    return isSpecialCatalog ? sortSpecialProductsFirst(base) : base;
   }, [allowedCategoryIds, isSpecialCatalog, visibleProducts]);
 
   const scopedFilters = useMemo<FiltersState>(() => {
     if (!isSpecialCatalog || !allowedCategoryIds) return filters;
-
     const scopedCatIds = new Set(
       scopedProducts
         .map((p) => getProductRefId(p.categoryId as ProductRef))
@@ -345,7 +370,6 @@ export function ProductsPageDetails({
         .map((p) => getProductRefId(p.subSubCategoryId as ProductRef))
         .filter(Boolean) as string[],
     );
-
     return {
       categories: filters.categories.filter(
         (c) => c.id && scopedCatIds.has(c.id),
@@ -360,19 +384,26 @@ export function ProductsPageDetails({
     };
   }, [allowedCategoryIds, filters, isSpecialCatalog, scopedProducts]);
 
-  const visibleSubCategories = useMemo(() => {
-    if (!selectedCategories.length) return [];
-    return scopedFilters.subCategories.filter(
-      (sub) => sub.parentId && selectedCategories.includes(sub.parentId),
-    );
-  }, [scopedFilters.subCategories, selectedCategories]);
+  const visibleSubCategories = useMemo(
+    () =>
+      !selectedCategories.length
+        ? []
+        : scopedFilters.subCategories.filter(
+            (sub) => sub.parentId && selectedCategories.includes(sub.parentId),
+          ),
+    [scopedFilters.subCategories, selectedCategories],
+  );
 
-  const visibleSubSubCategories = useMemo(() => {
-    if (!selectedSubCategories.length) return [];
-    return scopedFilters.subSubCategories.filter(
-      (sub) => sub.parentId && selectedSubCategories.includes(sub.parentId),
-    );
-  }, [scopedFilters.subSubCategories, selectedSubCategories]);
+  const visibleSubSubCategories = useMemo(
+    () =>
+      !selectedSubCategories.length
+        ? []
+        : scopedFilters.subSubCategories.filter(
+            (sub) =>
+              sub.parentId && selectedSubCategories.includes(sub.parentId),
+          ),
+    [scopedFilters.subSubCategories, selectedSubCategories],
+  );
 
   const matchesSpecificationFilters = (
     product: ProductRecord,
@@ -400,41 +431,35 @@ export function ProductsPageDetails({
         const subSubCategoryId = getProductRefId(
           product.subSubCategoryId as ProductRef,
         );
-
         if (
           ignoreParamKey !== CATEGORY_PARAM &&
           !matchesMultiValueFilter(selectedCategories, categoryId)
-        ) {
+        )
           return false;
-        }
-
         if (
           ignoreParamKey !== SUB_CATEGORY_PARAM &&
           !matchesMultiValueFilter(selectedSubCategories, subCategoryId)
-        ) {
+        )
           return false;
-        }
-
         if (
           ignoreParamKey !== SUB_SUB_CATEGORY_PARAM &&
           !matchesMultiValueFilter(selectedSubSubCategories, subSubCategoryId)
-        ) {
+        )
           return false;
-        }
-
-        const specificationFilters =
+        const specFilters =
           ignoreParamKey &&
-          ignoreParamKey !== CATEGORY_PARAM &&
-          ignoreParamKey !== SUB_CATEGORY_PARAM &&
-          ignoreParamKey !== SUB_SUB_CATEGORY_PARAM
+          ![
+            CATEGORY_PARAM,
+            SUB_CATEGORY_PARAM,
+            SUB_SUB_CATEGORY_PARAM,
+          ].includes(ignoreParamKey)
             ? Object.fromEntries(
                 Object.entries(selectedSpecificationFilters).filter(
                   ([key]) => key !== ignoreParamKey,
                 ),
               )
             : selectedSpecificationFilters;
-
-        return matchesSpecificationFilters(product, specificationFilters);
+        return matchesSpecificationFilters(product, specFilters);
       }),
     [
       scopedProducts,
@@ -455,17 +480,14 @@ export function ProductsPageDetails({
         const subSubCategoryId = getProductRefId(
           product.subSubCategoryId as ProductRef,
         );
-
         if (!matchesMultiValueFilter(selectedCategories, categoryId))
           return false;
         if (!matchesMultiValueFilter(selectedSubCategories, subCategoryId))
           return false;
         if (
           !matchesMultiValueFilter(selectedSubSubCategories, subSubCategoryId)
-        ) {
+        )
           return false;
-        }
-
         return matchesSpecificationFilters(
           product,
           selectedSpecificationFilters,
@@ -481,38 +503,28 @@ export function ProductsPageDetails({
   );
 
   const categoryOptions = useMemo(() => {
-    const baseProducts = getProductsForCounts({
-      ignoreParamKey: CATEGORY_PARAM,
-    });
+    const base = getProductsForCounts({ ignoreParamKey: CATEGORY_PARAM });
     return scopedFilters.categories
-      .map((option) => ({
-        ...option,
-        count: baseProducts.filter(
-          (p) => getProductRefId(p.categoryId as ProductRef) === option.id,
+      .map((o) => ({
+        ...o,
+        count: base.filter(
+          (p) => getProductRefId(p.categoryId as ProductRef) === o.id,
         ).length,
       }))
-      .filter(
-        (option) =>
-          option.count > 0 || selectedCategories.includes(option.id ?? ""),
-      );
+      .filter((o) => o.count > 0 || selectedCategories.includes(o.id ?? ""));
   }, [getProductsForCounts, scopedFilters.categories, selectedCategories]);
 
   const subCategoryOptions = useMemo(() => {
     if (!selectedCategories.length) return [];
-    const baseProducts = getProductsForCounts({
-      ignoreParamKey: SUB_CATEGORY_PARAM,
-    });
+    const base = getProductsForCounts({ ignoreParamKey: SUB_CATEGORY_PARAM });
     return visibleSubCategories
-      .map((option) => ({
-        ...option,
-        count: baseProducts.filter(
-          (p) => getProductRefId(p.subCategoryId as ProductRef) === option.id,
+      .map((o) => ({
+        ...o,
+        count: base.filter(
+          (p) => getProductRefId(p.subCategoryId as ProductRef) === o.id,
         ).length,
       }))
-      .filter(
-        (option) =>
-          option.count > 0 || selectedSubCategories.includes(option.id ?? ""),
-      );
+      .filter((o) => o.count > 0 || selectedSubCategories.includes(o.id ?? ""));
   }, [
     getProductsForCounts,
     selectedCategories.length,
@@ -522,21 +534,18 @@ export function ProductsPageDetails({
 
   const subSubCategoryOptions = useMemo(() => {
     if (!selectedSubCategories.length) return [];
-    const baseProducts = getProductsForCounts({
+    const base = getProductsForCounts({
       ignoreParamKey: SUB_SUB_CATEGORY_PARAM,
     });
     return visibleSubSubCategories
-      .map((option) => ({
-        ...option,
-        count: baseProducts.filter(
-          (p) =>
-            getProductRefId(p.subSubCategoryId as ProductRef) === option.id,
+      .map((o) => ({
+        ...o,
+        count: base.filter(
+          (p) => getProductRefId(p.subSubCategoryId as ProductRef) === o.id,
         ).length,
       }))
       .filter(
-        (option) =>
-          option.count > 0 ||
-          selectedSubSubCategories.includes(option.id ?? ""),
+        (o) => o.count > 0 || selectedSubSubCategories.includes(o.id ?? ""),
       );
   }, [
     getProductsForCounts,
@@ -549,37 +558,32 @@ export function ProductsPageDetails({
     () =>
       scopedFilters.specifications
         .map((group) => {
-          const baseProducts = getProductsForCounts({
-            ignoreParamKey: group.key,
-          });
+          const base = getProductsForCounts({ ignoreParamKey: group.key });
           return {
             key: group.key,
             label: group.label,
             values: group.values
-              .map((option) => {
-                const optionValue = option.value ?? option.label;
-                return {
-                  ...option,
-                  count: baseProducts.filter((p) =>
-                    p.specifications.some(
-                      (spec) =>
-                        spec.key.trim().toLowerCase() === group.key &&
-                        spec.value === optionValue,
-                    ),
-                  ).length,
-                };
-              })
+              .map((o) => ({
+                ...o,
+                count: base.filter((p) =>
+                  p.specifications.some(
+                    (spec) =>
+                      spec.key.trim().toLowerCase() === group.key &&
+                      spec.value === (o.value ?? o.label),
+                  ),
+                ).length,
+              }))
               .filter(
-                (option) =>
-                  option.count > 0 ||
-                  (option.value &&
+                (o) =>
+                  o.count > 0 ||
+                  (o.value &&
                     (selectedSpecificationFilters[group.key] ?? []).includes(
-                      option.value,
+                      o.value,
                     )),
               ),
           };
         })
-        .filter((group) => group.values.length > 0),
+        .filter((g) => g.values.length > 0),
     [
       getProductsForCounts,
       scopedFilters.specifications,
@@ -588,19 +592,14 @@ export function ProductsPageDetails({
   );
 
   const activeTitle = useMemo(() => {
-    if (selectedSubSubCategories.length) {
+    if (selectedSubSubCategories.length)
       return `${selectedSubSubCategories.length} sub-sub-category selections`;
-    }
-    if (selectedSubCategories.length) {
+    if (selectedSubCategories.length)
       return `${selectedSubCategories.length} sub-category selections`;
-    }
-    if (selectedCategories.length) {
+    if (selectedCategories.length)
       return `${selectedCategories.length} category selections`;
-    }
-    if (isSpecialCatalog) {
-      return "Your special catalog";
-    }
-    return "All products";
+    if (isSpecialCatalog) return "Your special catalog";
+    return "All Products";
   }, [
     isSpecialCatalog,
     selectedCategories,
@@ -633,63 +632,45 @@ export function ProductsPageDetails({
     nextValues.forEach((item) => params.append(paramKey, item));
 
     if (paramKey === CATEGORY_PARAM) {
-      const allowedSubCategories = filters.subCategories
-        .filter((sub) => sub.parentId && nextValues.includes(sub.parentId))
-        .map((sub) => sub.id)
+      const allowedSubs = filters.subCategories
+        .filter((s) => s.parentId && nextValues.includes(s.parentId))
+        .map((s) => s.id)
         .filter(Boolean) as string[];
-
-      const nextSubCategories = getSelectedValues(
-        params,
-        SUB_CATEGORY_PARAM,
-      ).filter((item) => allowedSubCategories.includes(item));
-
-      params.delete(SUB_CATEGORY_PARAM);
-      nextSubCategories.forEach((item) =>
-        params.append(SUB_CATEGORY_PARAM, item),
+      const nextSubs = getSelectedValues(params, SUB_CATEGORY_PARAM).filter(
+        (i) => allowedSubs.includes(i),
       );
-
-      const allowedSubSubCategories = filters.subSubCategories
-        .filter(
-          (sub) => sub.parentId && nextSubCategories.includes(sub.parentId),
-        )
-        .map((sub) => sub.id)
+      params.delete(SUB_CATEGORY_PARAM);
+      nextSubs.forEach((i) => params.append(SUB_CATEGORY_PARAM, i));
+      const allowedSubSubs = filters.subSubCategories
+        .filter((s) => s.parentId && nextSubs.includes(s.parentId))
+        .map((s) => s.id)
         .filter(Boolean) as string[];
-
-      const nextSubSubCategories = getSelectedValues(
+      const nextSubSubs = getSelectedValues(
         params,
         SUB_SUB_CATEGORY_PARAM,
-      ).filter((item) => allowedSubSubCategories.includes(item));
-
+      ).filter((i) => allowedSubSubs.includes(i));
       params.delete(SUB_SUB_CATEGORY_PARAM);
-      nextSubSubCategories.forEach((item) =>
-        params.append(SUB_SUB_CATEGORY_PARAM, item),
-      );
+      nextSubSubs.forEach((i) => params.append(SUB_SUB_CATEGORY_PARAM, i));
     }
 
     if (paramKey === SUB_CATEGORY_PARAM) {
-      const allowedSubSubCategories = filters.subSubCategories
-        .filter((sub) => sub.parentId && nextValues.includes(sub.parentId))
-        .map((sub) => sub.id)
+      const allowedSubSubs = filters.subSubCategories
+        .filter((s) => s.parentId && nextValues.includes(s.parentId))
+        .map((s) => s.id)
         .filter(Boolean) as string[];
-
-      const nextSubSubCategories = getSelectedValues(
+      const nextSubSubs = getSelectedValues(
         params,
         SUB_SUB_CATEGORY_PARAM,
-      ).filter((item) => allowedSubSubCategories.includes(item));
-
+      ).filter((i) => allowedSubSubs.includes(i));
       params.delete(SUB_SUB_CATEGORY_PARAM);
-      nextSubSubCategories.forEach((item) =>
-        params.append(SUB_SUB_CATEGORY_PARAM, item),
-      );
+      nextSubSubs.forEach((i) => params.append(SUB_SUB_CATEGORY_PARAM, i));
     }
 
     const query = params.toString();
     router.replace(query ? `${basePath}?${query}` : basePath);
   };
 
-  const handleClearFilters = () => {
-    router.replace(basePath);
-  };
+  const handleClearFilters = () => router.replace(basePath);
 
   const sharedSidebarProps = {
     selectedCategories,
@@ -705,88 +686,101 @@ export function ProductsPageDetails({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f6f2ea] text-stone-900">
+    <div
+      className="flex min-h-screen flex-col"
+      style={{ background: "#fff", fontFamily: "'DM Sans', sans-serif" }}
+    >
+      {/* Special session banner */}
       {isSpecialCatalog && isSpecialSession && (
-        <div className="bg-stone-900 px-6 py-2.5 text-center text-xs font-medium uppercase tracking-widest text-white/70">
-          Special catalog active -{" "}
+        <div
+          className="px-6 py-2.5 text-center text-xs font-medium uppercase tracking-widest"
+          style={{ background: "#1a1a1a", color: "rgba(255,255,255,0.7)" }}
+        >
+          Special catalog active —{" "}
           <span className="text-white">
             {specialUser?.allowedCategories.length} categories
           </span>{" "}
-          available to your account
+          available
         </div>
       )}
 
-      <main className="flex-1 pb-16 pt-4">
-        <section className="mt-8 px-4 sm:px-6 lg:px-10">
+      <main className="flex-1 pb-16 pt-6 mt-8">
+        <section className="px-4 sm:px-6 lg:px-10">
           <div className="mx-auto max-w-7xl">
-            <div className="mb-4 flex items-center justify-between lg:hidden">
-              <p className="text-sm font-semibold uppercase tracking-widest text-stone-500">
+            {/* Mobile filter toggle */}
+            <div className="mb-5 flex items-center justify-between lg:hidden">
+              <p
+                className="text-xs font-semibold uppercase tracking-widest"
+                style={{ color: "#888" }}
+              >
                 {filteredProducts.length}{" "}
                 {filteredProducts.length === 1 ? "product" : "products"}
               </p>
               <button
                 type="button"
                 onClick={() => setIsSidebarOpen(true)}
-                className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-700 shadow-sm transition-colors active:bg-stone-100"
+                className="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-colors"
+                style={{
+                  border: "1px solid #f0e0dc",
+                  background: "#fff",
+                  color: "#1a1a1a",
+                }}
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 4h18M6 8h12M9 12h6"
-                  />
-                </svg>
+                <SlidersHorizontal size={13} />
                 Filters
                 {hasActiveFilters && (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-stone-900 text-[10px] text-white">
+                  <span
+                    className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white"
+                    style={{ background: "#d94f4f" }}
+                  >
                     {activeFilterCount}
                   </span>
                 )}
               </button>
             </div>
 
+            {/* Mobile sidebar drawer */}
             {isSidebarOpen && (
               <div className="fixed inset-0 z-50 lg:hidden">
                 <div
-                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  className="absolute inset-0 bg-black/30 backdrop-blur-sm"
                   onClick={() => setIsSidebarOpen(false)}
                 />
-                <aside className="absolute bottom-0 left-0 right-0 max-h-[88vh] overflow-y-auto rounded-t-[2rem] bg-white shadow-2xl">
+                <aside className="absolute bottom-0 left-0 right-0 max-h-[88vh] overflow-y-auto rounded-t-3xl bg-white shadow-2xl">
                   <div className="flex justify-center pb-1 pt-3">
-                    <div className="h-1 w-10 rounded-full bg-stone-200" />
+                    <div className="h-1 w-10 rounded-full bg-gray-200" />
                   </div>
-
                   <div className="px-6 pb-10">
-                    <div className="flex items-center justify-between border-b border-stone-100 py-4">
+                    <div
+                      className="flex items-center justify-between border-b py-4"
+                      style={{ borderColor: "#f0e0dc" }}
+                    >
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
+                        <p
+                          className="text-[10px] font-semibold uppercase tracking-[0.28em]"
+                          style={{ color: "#d94f4f" }}
+                        >
                           Catalog Filters
                         </p>
                         <h2
-                          className="mt-1 text-2xl italic text-stone-900"
+                          className="mt-1 text-2xl italic"
                           style={{
-                            fontFamily:
-                              "'Georgia', 'Times New Roman', serif",
+                            fontFamily: "'Georgia', serif",
+                            color: "#1a1a1a",
                           }}
                         >
-                          Refined selection
+                          Refine selection
                         </h2>
                       </div>
                       <button
                         type="button"
                         onClick={() => setIsSidebarOpen(false)}
-                        className="rounded-full bg-stone-100 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-700 transition-colors hover:bg-stone-200"
+                        className="flex h-8 w-8 items-center justify-center rounded-full"
+                        style={{ background: "#f5f5f5", color: "#555" }}
                       >
-                        Done
+                        <X size={14} />
                       </button>
                     </div>
-
                     <SidebarContent
                       {...sharedSidebarProps}
                       onClearFilters={handleClearFilters}
@@ -796,52 +790,65 @@ export function ProductsPageDetails({
               </div>
             )}
 
-            <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-              <aside className="hidden h-fit rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm lg:sticky lg:top-28 lg:block">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
-                    Catalog Filters
-                  </p>
-                  <h2
-                    className="mt-3 text-3xl italic text-stone-900"
-                    style={{
-                      fontFamily: "'Georgia', 'Times New Roman', serif",
-                    }}
-                  >
-                    Refined selection
-                  </h2>
-                  <p className="mt-4 text-sm leading-6 text-stone-600">
-                    Select one or more categories first. Sub-categories and
-                    sub-sub-categories only appear after their parent
-                    selections are made.
-                  </p>
-                </div>
-
+            <div className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
+              {/* Desktop sidebar */}
+              <aside
+                className="hidden h-fit rounded-2xl p-6 lg:sticky lg:top-28 lg:block"
+                style={{ background: "#fdf5f3", border: "1px solid #f0e0dc" }}
+              >
+                <p
+                  className="text-[10px] font-semibold uppercase tracking-[0.28em]"
+                  style={{ color: "#d94f4f" }}
+                >
+                  Catalog Filters
+                </p>
+                <h2
+                  className="mt-2 text-2xl italic"
+                  style={{ fontFamily: "'Georgia', serif", color: "#1a1a1a" }}
+                >
+                  Refine selection
+                </h2>
+                <p className="mt-3 text-xs leading-5" style={{ color: "#888" }}>
+                  Select a category first. Sub-categories appear after parent
+                  selections are made.
+                </p>
                 <SidebarContent {...sharedSidebarProps} />
               </aside>
 
+              {/* Main content */}
               <div>
-                <div className="mb-6 flex flex-col gap-4 rounded-[2rem] border border-stone-200 bg-white px-5 py-5 shadow-sm sm:flex-row sm:items-end sm:justify-between sm:px-6">
+                {/* Results header */}
+                <div
+                  className="mb-6 flex flex-col gap-3 rounded-2xl px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  style={{ background: "#fdf5f3", border: "1px solid #f0e0dc" }}
+                >
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                    <p
+                      className="text-[10px] font-semibold uppercase tracking-[0.24em]"
+                      style={{ color: "#d94f4f" }}
+                    >
                       Live Inventory
                     </p>
                     <h2
-                      className="mt-2 text-2xl italic text-stone-900 sm:text-3xl"
+                      className="mt-1 text-xl italic"
                       style={{
-                        fontFamily: "'Georgia', 'Times New Roman', serif",
+                        fontFamily: "'Georgia', serif",
+                        color: "#1a1a1a",
                       }}
                     >
                       {activeTitle}
                     </h2>
                   </div>
-                  <p className="text-sm text-stone-600">
+                  <p className="text-xs" style={{ color: "#888" }}>
                     Showing{" "}
-                    <span className="font-semibold text-stone-900">
+                    <span
+                      className="font-semibold"
+                      style={{ color: "#1a1a1a" }}
+                    >
                       {filteredProducts.length}
                     </span>
                     {scopedProducts.length !== filteredProducts.length && (
-                      <span className="text-stone-400">
+                      <span style={{ color: "#bbb" }}>
                         {" "}
                         of {scopedProducts.length}
                       </span>
@@ -850,7 +857,8 @@ export function ProductsPageDetails({
                     {hasActiveFilters && (
                       <Link
                         href={basePath}
-                        className="ml-3 text-xs text-stone-400 underline underline-offset-2 transition-colors hover:text-stone-700"
+                        className="ml-3 underline underline-offset-2 transition-colors hover:text-gray-700"
+                        style={{ color: "#d94f4f", fontSize: "11px" }}
                       >
                         Clear filters
                       </Link>
@@ -858,16 +866,30 @@ export function ProductsPageDetails({
                   </p>
                 </div>
 
+                {/* Products grid */}
                 {loadError ? (
-                  <div className="rounded-[2rem] border border-[#ead5cc] bg-white px-6 py-8 text-sm text-[#7b4e3c] shadow-sm">
+                  <div
+                    className="rounded-2xl px-6 py-8 text-center text-sm"
+                    style={{
+                      background: "#fdf5f3",
+                      border: "1px solid #f0e0dc",
+                      color: "#d94f4f",
+                    }}
+                  >
                     {loadError}
                   </div>
                 ) : isLoading ? (
-                  <div className="rounded-[2rem] border border-stone-200 bg-white px-6 py-14 text-center text-sm text-stone-500 shadow-sm">
-                    Loading products...
+                  <div className="grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="animate-pulse rounded-2xl bg-gray-100"
+                        style={{ aspectRatio: "3/4" }}
+                      />
+                    ))}
                   </div>
                 ) : filteredProducts.length ? (
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-10 xl:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-6 sm:gap-y-10 xl:grid-cols-3">
                     {filteredProducts.map((product) => (
                       <ProductCard
                         key={product._id}
@@ -890,20 +912,28 @@ export function ProductsPageDetails({
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-[2rem] border border-stone-200 bg-white px-6 py-14 text-center shadow-sm">
+                  <div
+                    className="rounded-2xl px-6 py-14 text-center"
+                    style={{
+                      background: "#fdf5f3",
+                      border: "1px solid #f0e0dc",
+                    }}
+                  >
                     <p
-                      className="text-3xl italic text-stone-900"
+                      className="text-2xl italic"
                       style={{
-                        fontFamily: "'Georgia', 'Times New Roman', serif",
+                        fontFamily: "'Georgia', serif",
+                        color: "#1a1a1a",
                       }}
                     >
                       No products found
                     </p>
-                    <p className="mt-3 text-sm text-stone-500">
+                    <p className="mt-3 text-xs" style={{ color: "#888" }}>
                       No results match the current filters.{" "}
                       <Link
                         href={basePath}
-                        className="underline underline-offset-2 transition-colors hover:text-stone-800"
+                        className="underline underline-offset-2"
+                        style={{ color: "#d94f4f" }}
                       >
                         View all products
                       </Link>

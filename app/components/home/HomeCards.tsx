@@ -38,7 +38,6 @@ const HomeCards = () => {
         setLoading(false);
       }
     };
-
     void fetchProducts();
   }, []);
 
@@ -87,48 +86,51 @@ const HomeCards = () => {
   };
 
   return (
-    <section
-      className="px-4 py-12 sm:px-6 lg:px-10"
-      style={{ backgroundColor: "#f5f3ee" }}
-    >
+    <section className="bg-white px-4 py-20 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-7xl">
 
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
-          <h2
-            className="text-3xl italic text-stone-800 sm:text-4xl lg:text-5xl"
-            style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 400 }}
-          >
-            TFB Curations
-          </h2>
+          <div className="flex-1 text-center">
+            <p
+              className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-800"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              New Arrivals
+            </p>
+            <div className="mx-auto mt-2 h-[1px] w-10 bg-gray-300" />
+          </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-3 ml-4">
             <a
               href="/products"
-              className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500 transition-colors hover:text-stone-800 sm:text-[11px]"
+              className="hidden text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500 transition-colors hover:text-gray-900 sm:block"
+              style={{
+                borderBottom: "1px solid #d1d5db",
+                paddingBottom: "2px",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
             >
               View All
-              <span className="hidden sm:inline"> Selections</span>
             </a>
 
-            {/* Arrows — only when overflow exists */}
             {!loading && !hasError && hasOverflow && (
               <div className="flex gap-2">
                 <button
                   onClick={() => handleScroll("left")}
                   disabled={!canScrollLeft}
                   aria-label="Scroll left"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-600 transition-all duration-200 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-all duration-200 hover:border-gray-400 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-30"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={14} strokeWidth={2} />
                 </button>
                 <button
                   onClick={() => handleScroll("right")}
                   disabled={!canScrollRight}
                   aria-label="Scroll right"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-600 transition-all duration-200 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-all duration-200 hover:border-gray-400 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-30"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={14} strokeWidth={2} />
                 </button>
               </div>
             )}
@@ -137,33 +139,27 @@ const HomeCards = () => {
 
         {/* Cards */}
         {loading ? (
-          <div className="flex gap-4 overflow-hidden pb-2">
-            {Array.from({ length: 10 }).map((_, index) => (
-              <div key={index} data-card className="shrink-0">
-                <div
-                  className="w-full animate-pulse rounded-2xl bg-stone-200"
-                  style={{ aspectRatio: "3/4" }}
-                />
-                <div className="mt-3 space-y-1.5 px-0.5">
-                  <div className="h-2.5 w-16 animate-pulse rounded-full bg-stone-200" />
-                  <div className="h-4 w-full animate-pulse rounded-full bg-stone-200" />
-                  <div className="h-3 w-24 animate-pulse rounded-full bg-stone-200" />
-                </div>
-              </div>
+          <div className="flex gap-4 overflow-hidden pb-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="shrink-0 animate-pulse rounded-2xl bg-gray-100"
+                style={{ aspectRatio: "3/4", width: "calc((100% - 64px) / 5)" }}
+              />
             ))}
           </div>
         ) : hasError ? (
-          <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-8 text-center text-sm text-red-700">
-            Unable to load the fabric collection right now.
+          <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-8 text-center text-sm text-red-400">
+            Unable to load products right now.
           </div>
         ) : visibleProducts.length === 0 ? (
-          <div className="rounded-2xl border border-stone-200 bg-white px-6 py-8 text-center text-sm text-stone-600">
+          <div className="rounded-2xl border border-gray-100 bg-gray-50 px-6 py-8 text-center text-sm text-gray-400">
             No products are available yet.
           </div>
         ) : (
           <div
             ref={scrollRef}
-            className="flex items-start gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex items-start gap-4 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {visibleProducts.map((product) => (
               <div key={product._id} data-card className="shrink-0">
@@ -185,20 +181,17 @@ const HomeCards = () => {
             ))}
           </div>
         )}
-
       </div>
 
-      {/* Card widths: 2 visible on mobile, 3 on sm, 5 on lg */}
       <style>{`
         [data-card] {
-          width: calc((100% - (2 * 1rem) - 2rem * 2) / 2);
-          width: calc((100% - 8px - 3rem) / 2);
+          width: calc((100% - 16px) / 2);
         }
         @media (min-width: 640px) {
-          [data-card] { width: calc((100% - 32px - 3rem) / 3); }
+          [data-card] { width: calc((100% - 32px) / 3); }
         }
         @media (min-width: 1024px) {
-          [data-card] { width: calc((100% - 64px - 5rem) / 5); }
+          [data-card] { width: calc((100% - 64px) / 5); }
         }
       `}</style>
     </section>

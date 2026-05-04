@@ -59,32 +59,10 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-neutral px-4 py-12 text-primary sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[2rem] border border-tertiary bg-white shadow-[0_30px_90px_rgba(26,27,46,0.08)] lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="relative hidden min-h-[680px] overflow-hidden bg-primary lg:block">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(186,164,133,0.4),transparent_35%),linear-gradient(135deg,#1a1b2e_0%,#252844_45%,#34385f_100%)]" />
-          <div className="relative flex h-full flex-col justify-between p-10 text-neutral">
-            <div>
-              <p className="font-sans text-xs uppercase tracking-[0.35em] text-tertiary">
-                The Fabric People
-              </p>
-              <h1 className="mt-6 max-w-md font-serif text-5xl italic leading-tight">
-                Sign in to your account and keep your sourcing flow moving.
-              </h1>
-            </div>
-
-            <div className="max-w-sm space-y-4">
-              {[
-                "Track curated fabrics and product activity in one place.",
-                "Keep checkout and saved selections ready across sessions.",
-                "Use the same account across desktop and mobile.",
-              ].map((item) => (
-                <div key={item} className="flex items-start gap-3">
-                  <div className="mt-1 rounded-full border border-tertiary/40 p-1.5">
-                    <UserRound size={14} />
-                  </div>
-                  <p className="font-sans text-sm leading-6 text-neutral/80">{item}</p>
-                </div>
-              ))}
-            </div>
+        <section className="relative hidden min-h-[480px] overflow-hidden bg-primary lg:block">
+          
+          <div className="relative flex h-full flex-col justify-between text-neutral">
+            <img src="/tfb-side.png" alt="Side Panel" />
           </div>
         </section>
 
@@ -149,8 +127,12 @@ export default function LoginPage() {
 
               <button
                 type="submit"
+                className="w-full rounded-2xl px-5 py-3 font-sans text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:opacity-90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
                 disabled={loading}
-                className="w-full rounded-2xl bg-primary px-5 py-3 font-sans text-sm font-semibold uppercase tracking-[0.18em] text-neutral transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #E8654A 0%, #E8426A 100%)",
+                }}
               >
                 {loading ? "Signing in..." : "Sign In"}
               </button>
