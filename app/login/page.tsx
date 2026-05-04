@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "@/app/context/AuthContext";
 import { getSafePostLoginRedirect } from "@/app/services/authRedirect";
@@ -60,7 +60,6 @@ export default function LoginPage() {
     <main className="min-h-screen bg-neutral px-4 py-12 text-primary sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[2rem] border border-tertiary bg-white shadow-[0_30px_90px_rgba(26,27,46,0.08)] lg:grid-cols-[1.1fr_0.9fr]">
         <section className="relative hidden min-h-[480px] overflow-hidden bg-primary lg:block">
-          
           <div className="relative flex h-full flex-col justify-between text-neutral">
             <img src="/tfb-side.png" alt="Side Panel" />
           </div>
@@ -68,9 +67,17 @@ export default function LoginPage() {
 
         <section className="p-6 sm:p-8 lg:p-10">
           <div className="mx-auto flex max-w-md flex-col justify-center py-4">
-            <p className="font-sans text-xs uppercase tracking-[0.32em] text-secondary">
-              Welcome Back
-            </p>
+            <div className="w-full flex justify-between items-center">
+              <Link
+                href="/"
+                className="inline-flex w-fit items-center gap-2 font-sans text-xs font-semibold uppercase tracking-[0.18em] text-secondary transition hover:text-primary"
+              >
+               <ArrowLeft size={15} /> Home
+              </Link>
+              <p className="font-sans text-xs uppercase tracking-[0.32em] text-secondary">
+                Welcome Back
+              </p>
+            </div>
             <h2 className="mt-4 font-serif text-4xl italic leading-tight text-primary">
               Login
             </h2>
@@ -90,7 +97,10 @@ export default function LoginPage() {
                   Email
                 </span>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secondary" size={16} />
+                  <Mail
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secondary"
+                    size={16}
+                  />
                   <input
                     type="email"
                     value={email}
@@ -106,7 +116,10 @@ export default function LoginPage() {
                   Password
                 </span>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secondary" size={16} />
+                  <Lock
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secondary"
+                    size={16}
+                  />
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
@@ -118,7 +131,9 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary transition hover:text-primary"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -140,10 +155,14 @@ export default function LoginPage() {
 
             <p className="mt-6 font-sans text-sm text-primary/65">
               Don&apos;t have an account?{" "}
-              <Link href="/signup" className="font-semibold text-secondary transition hover:text-primary">
+              <Link
+                href="/signup"
+                className="font-semibold text-secondary transition hover:text-primary"
+              >
                 Create one
               </Link>
             </p>
+            
           </div>
         </section>
       </div>

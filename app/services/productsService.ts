@@ -131,12 +131,14 @@ export function getProductHref(product: ProductRecord) {
 export const getAllProducts = async () => {
   return fetchApi<{ products?: ProductRecord[] }>("/products", {
     cache: "no-store",
+    onUnauthorizedRedirectTo: null,
   });
 };
 
 export const getProductFilters = async () => {
   return fetchApi<ProductFiltersResponse>("/products/filters", {
     cache: "no-store",
+    onUnauthorizedRedirectTo: null,
   });
 };
 
@@ -167,5 +169,6 @@ export const getProductByName = async (name: string) => {
     product?: ProductRecord;
   }>(`/products/${name}`, {
     method: "GET",
+    onUnauthorizedRedirectTo: null,
   });
 };

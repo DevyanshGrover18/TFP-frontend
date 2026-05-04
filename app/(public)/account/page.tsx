@@ -13,6 +13,7 @@ import {
   type UserQuoteProfile,
 } from "@/app/services/userService";
 import { storeUser, storeSpecialUser } from "@/app/services/userSession";
+import { ArrowRight } from "lucide-react";
 
 const emptyProfile: UserQuoteProfile = {
   invoice: {
@@ -232,7 +233,7 @@ export default function AccountPage() {
             className="mt-8 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-90"
             style={{ background: "linear-gradient(135deg, #E8654A 0%, #E8426A 100%)" }}
           >
-            Sign In →
+            Sign In <ArrowRight size={15} />
           </Link>
         </div>
       </div>

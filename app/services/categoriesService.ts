@@ -19,6 +19,7 @@ export type CategoryPayload = {
 export const getAllCategories = async () => {
   return fetchApi<{ categories?: Category[] }>("/categories/tree", {
     cache: "no-store",
+    onUnauthorizedRedirectTo: null,
   });
 };
 

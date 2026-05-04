@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "@/app/context/AuthContext";
 
@@ -52,9 +52,17 @@ export default function SignupPage() {
       <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[2rem] border border-tertiary bg-white shadow-[0_30px_90px_rgba(26,27,46,0.08)] lg:grid-cols-[0.92fr_1.08fr]">
         <section className="p-6 sm:p-8 lg:p-10">
           <div className="mx-auto flex max-w-md flex-col justify-center py-4">
+            <div className="w-full flex justify-between items-center">
+              <Link
+              href="/"
+              className="inline-flex w-fit items-center gap-2 font-sans text-xs font-semibold uppercase tracking-[0.18em] text-secondary transition hover:text-primary"
+            >
+             <ArrowLeft size={15} /> Home
+            </Link>
             <p className="font-sans text-xs uppercase tracking-[0.32em] text-secondary">
               New Account
             </p>
+            </div>
             <h1 className="mt-4 font-serif text-4xl italic leading-tight text-primary">
               User Signup
             </h1>
@@ -155,6 +163,15 @@ export default function SignupPage() {
                 className="font-semibold text-secondary transition hover:text-primary"
               >
                 Sign in
+              </Link>
+            </p>
+            <p className="mt-3 font-sans text-sm text-primary/65">
+              Want to keep browsing?{" "}
+              <Link
+                href="/"
+                className="font-semibold text-secondary transition hover:text-primary"
+              >
+                Return home
               </Link>
             </p>
           </div>

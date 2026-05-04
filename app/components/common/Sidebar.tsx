@@ -10,6 +10,7 @@ import {
   Users,
   ClipboardList,
   UserStar,
+  Mail,
 } from "lucide-react";
 
 type NavItem = {
@@ -25,6 +26,7 @@ const navItems: NavItem[] = [
   { href: "/admin/users", label: "Users", icon: <Users size={18} /> },
   { href: "/admin/special-users", label: "Special Users", icon: <UserStar size={18} /> },
   { href: "/admin/orders", label: "Orders", icon: <ClipboardList size={18} /> },
+  { href: "/admin/enquiries", label: "Enquiries", icon: <Mail size={18} /> },
 ];
 
 const Sidebar = () => {

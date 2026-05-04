@@ -1,26 +1,26 @@
 "use client";
 
-import Link from "next/link";
-
 export default function HeroSection() {
   return (
-    <section className="relative w-full h-[560px] overflow-hidden">
+    <section className="relative w-full h-[480px] sm:h-[520px] lg:h-[560px] overflow-hidden">
       {/* Gradient Background */}
       <div className="absolute inset-0 bg-linear-to-bl from-[#ea7939] via-[#fa645e] to-[#f13462]" />
 
-      {/* Right White Diagonal Section */}
+      {/* Right White Diagonal Section — desktop only */}
       <div
-        className="absolute top-0 right-0 h-full w-full bg-white z-[1]"
-        style={{
-          clipPath: "polygon(72% 0%, 100% 0%, 100% 100%, 77% 100%)",
-        }}
+        className="absolute top-0 right-0 h-full w-full bg-white z-[1] hidden lg:block"
+        style={{ clipPath: "polygon(72% 0%, 100% 0%, 100% 100%, 77% 100%)" }}
       />
 
       {/* Main Content */}
       <div className="relative z-[2] flex h-full py-6">
+
         {/* Left Content */}
-        <div className="flex flex-col justify-center pl-20 pr-12 w-[65%] text-white">
-          <h1 className="font-serif italic font-bold text-6xl leading-[1.05] tracking-[-0.02em] max-w-[560px]">
+        <div className="flex flex-col justify-center p-6 sm:px-12 lg:pl-20 md:py-6 lg:pr-12 w-full lg:w-[65%] text-white">
+          <h1
+            className="font-serif italic font-bold text-4xl sm:text-5xl lg:text-6xl leading-[1.05] tracking-[-0.02em] max-w-[560px]"
+            style={{ fontFamily: "'Georgia', serif" }}
+          >
             Sourcing Excellence
             <br />
             Woven Into Every
@@ -28,36 +28,47 @@ export default function HeroSection() {
             Detail
           </h1>
 
-          <p className="mt-8 text-2xl leading-[1.6] max-w-[520px] text-white/95">
-            Your trusted partner for Innerwear, Swimwear, Activewear &
+          <p className="mt-6 lg:mt-8 text-base sm:text-lg lg:text-2xl leading-[1.6] max-w-[520px] text-white/90">
+            Your trusted partner for Innerwear, Swimwear, Activewear &amp;
             Loungewear components and trims.
           </p>
 
           {/* CTA */}
-          <div className="flex gap-5 mt-10">
-            <button className="px-9 py-4 bg-white text-[#eb4b5e] font-semibold rounded-full hover:scale-105 transition-all">
+          <div className="flex flex-wrap gap-3 sm:gap-5 mt-7 lg:mt-10">
+            <a
+              href="/products"
+              className="px-7 sm:px-9 cursor-pointer py-3 sm:py-4 bg-white text-[#eb4b5e] text-sm sm:text-base font-semibold rounded-full hover:scale-105 transition-all"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
               Explore Products →
-            </button>
-
-            <button className="px-9 py-4 border-2 border-white text-white font-semibold rounded-full hover:bg-white hover:text-[#eb4b5e] transition-all">
+            </a>
+            <button
+              className="px-7 sm:px-9 cursor-pointer py-3 sm:py-4 border-2 border-white text-white text-sm sm:text-base font-semibold rounded-full hover:bg-white hover:text-[#eb4b5e] transition-all"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
               Contact Us
             </button>
           </div>
 
           {/* Features */}
-          <div className="flex gap-8 mt-10 text-[16px] text-white/95">
+          <div
+            className="flex flex-wrap gap-4 sm:gap-8 mt-7 lg:mt-10 text-sm sm:text-base text-white/90"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
             <span>✦ Quality Assured</span>
             <span>◇ OEM/ODM</span>
             <span>⊙ On-Time Delivery</span>
           </div>
         </div>
 
-        {/* Right Image Section */}
-        <div className="relative flex-1">
-          {/* Diamond Frame */}
-          <div className="absolute right-[45%] top-[41%] -translate-y-1/2 w-[300px] h-[400px] scale-120 -rotate-45 overflow-hidden rounded-[32px] bg-white/10 z-1" />
-          <div className="absolute right-[47%] top-[49%] -translate-y-1/2 w-[300px] h-[400px] scale-120 -rotate-45 overflow-hidden rounded-[32px] bg-white/10 z-1" />
-          <div className="absolute right-[45%] top-[59%] -translate-y-1/2 w-[300px] h-[400px] scale-120 -rotate-45 overflow-hidden rounded-[32px] bg-white/10 z-1" />
+        {/* Right Image Section — desktop only */}
+        <div className="relative flex-1 hidden lg:block">
+          {/* Diamond frame decorative layers */}
+          <div className="absolute right-[45%] top-[41%] -translate-y-1/2 w-[300px] h-[400px] scale-120 -rotate-45 overflow-hidden rounded-[32px] bg-white/10 z-[1]" />
+          <div className="absolute right-[47%] top-[49%] -translate-y-1/2 w-[300px] h-[400px] scale-120 -rotate-45 overflow-hidden rounded-[32px] bg-white/10 z-[1]" />
+          <div className="absolute right-[45%] top-[59%] -translate-y-1/2 w-[300px] h-[400px] scale-120 -rotate-45 overflow-hidden rounded-[32px] bg-white/10 z-[1]" />
+
+          {/* Main diamond frame */}
           <div className="absolute right-2/5 top-1/2 -translate-y-1/2 w-[300px] h-[400px] scale-120 -rotate-45 overflow-hidden rounded-[32px] border-[10px] border-white bg-[#F1ECE6] shadow-sm z-[3]">
             <div className="absolute inset-[-25%] rotate-45 scale-80 right-1">
               <img
@@ -71,12 +82,16 @@ export default function HeroSection() {
           {/* Decorative Dots */}
           <div className="absolute top-10 right-10 z-[4] grid grid-cols-4 gap-2">
             {Array.from({ length: 16 }).map((_, i) => (
-              <div
-                key={i}
-                className="w-[4px] h-[4px] rounded-full bg-[#e4b9b2]"
-              />
+              <div key={i} className="w-[4px] h-[4px] rounded-full bg-[#e4b9b2]" />
             ))}
           </div>
+        </div>
+
+        {/* Mobile decorative dots — top right corner */}
+        <div className="absolute top-6 right-6 z-[4] grid grid-cols-4 gap-1.5 lg:hidden">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="w-[3px] h-[3px] rounded-full bg-white/30" />
+          ))}
         </div>
       </div>
     </section>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { toast } from "react-toastify";
 import {
   getCartItems,
@@ -12,6 +12,7 @@ import {
 import { buildLoginRedirectPath } from "@/app/services/authRedirect";
 import { useCartCount } from "@/app/context/CartCountContext";
 import { useAuth } from "@/app/context/AuthContext";
+import { ArrowRight } from "lucide-react";
 
 type PendingState = Record<string, boolean>;
 
@@ -25,25 +26,22 @@ function getVariantLabel(item: CartItemRecord) {
 
 export default function CartDetails() {
   const [items, setItems] = useState<CartItemRecord[]>([]);
-  const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [pendingRows, setPendingRows] = useState<PendingState>({});
-  const router = useRouter();
   const pathname = usePathname();
-  const { sessionType } = useAuth();
+  const { user, specialUser, isSpecialSession } = useAuth();
   const { setCount } = useCartCount();
+  const activeUser = isSpecialSession ? specialUser : user;
 
   useEffect(() => {
-    if (sessionType === null) return;
-
-    if (sessionType !== "user" && sessionType !== "special") {
-      setIsAuthorized(false);
-      router.replace(buildLoginRedirectPath(pathname));
+    if (!activeUser?.id) {
+      setItems([]);
+      setCount(0);
+      setLoadError("");
+      setIsLoading(false);
       return;
     }
-
-    setIsAuthorized(true);
 
     const loadCart = async () => {
       try {
@@ -58,8 +56,8 @@ export default function CartDetails() {
       }
     };
 
-    loadCart();
-  }, [sessionType, router, pathname]);
+    void loadCart();
+  }, [activeUser?.id, pathname, setCount]);
 
   const totalItems = useMemo(() => items.length, [items]);
   useEffect(() => { setCount(totalItems); }, [totalItems, setCount]);
@@ -81,7 +79,39 @@ export default function CartDetails() {
     }
   };
 
-  if (!isAuthorized) return null;
+  if (!activeUser && !isLoading) {
+    return (
+      <div
+        className="min-h-screen bg-white px-6 py-20"
+        style={{ fontFamily: "'DM Sans', sans-serif" }}
+      >
+        <div className="mx-auto max-w-3xl rounded-2xl border border-[#f0e0dc] bg-[#fdf5f3] p-10 text-center">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#d94f4f]">
+            Trade Portal
+          </p>
+          <h1
+            className="mt-3 text-4xl italic text-[#1a1a1a]"
+            style={{ fontFamily: "'Georgia', serif" }}
+          >
+            Cart
+          </h1>
+          <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-[#888]">
+            Sign in to access your cart, review selected fabrics, and continue
+            with your sample request.
+          </p>
+          <Link
+            href={buildLoginRedirectPath(pathname)}
+            className="mt-8 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-90"
+            style={{
+              background: "linear-gradient(135deg, #E8654A 0%, #E8426A 100%)",
+            }}
+          >
+            Sign In <ArrowRight size={15} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

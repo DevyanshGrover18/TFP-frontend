@@ -457,7 +457,7 @@ const Navbar = () => {
                 <button
                   key={category._id}
                   onClick={() => handleCategoryClick(category)}
-                  className="flex items-center gap-1.5 px-4 py-2 text-[11.5px] font-medium uppercase tracking-[0.1em] rounded transition-all duration-150 relative"
+                  className="flex cursor-pointer items-center gap-1.5 px-4 py-2 text-[11.5px] font-medium uppercase tracking-[0.1em] rounded transition-all duration-150 relative"
                   style={{
                     color: isActive ? "#c8451a" : "#6b5b50",
                     background: isActive ? "rgba(200, 69, 26, 0.06)" : "transparent",
@@ -499,7 +499,7 @@ const Navbar = () => {
             <button
               type="button"
               onClick={openSpecialAccess}
-              className="flex items-center gap-1.5 px-4 py-2 rounded text-[11.5px] font-semibold uppercase tracking-[0.1em] transition-all duration-200 ml-1"
+              className="flex cursor-pointer items-center gap-1.5 px-4 py-2 rounded text-[11.5px] font-semibold uppercase tracking-[0.1em] transition-all duration-200 ml-1"
               style={{
                 background: isSpecialSession
                   ? "linear-gradient(135deg, #c8451a, #e8783c)"
