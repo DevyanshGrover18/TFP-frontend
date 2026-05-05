@@ -1,8 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, memo, useCallback, useEffect, useMemo, useState } from "react";
 import ProductCard from "../../components/common/ProductCard";
 import {
   getAllProducts,
@@ -36,6 +34,13 @@ type FiltersState = {
   specifications: ProductFilterGroup[];
 };
 
+type SelectedFiltersState = {
+  categories: string[];
+  subCategories: string[];
+  subSubCategories: string[];
+  specifications: Record<string, string[]>;
+};
+
 type ProductRef = string | { _id?: string; id?: string; name?: string };
 
 const EMPTY_FILTERS: FiltersState = {
@@ -43,6 +48,13 @@ const EMPTY_FILTERS: FiltersState = {
   subCategories: [],
   subSubCategories: [],
   specifications: [],
+};
+
+const EMPTY_SELECTED_FILTERS: SelectedFiltersState = {
+  categories: [],
+  subCategories: [],
+  subSubCategories: [],
+  specifications: {},
 };
 
 const CATEGORY_PARAM = "category";
@@ -54,6 +66,52 @@ const formatFilterLabel = (value: string) =>
 
 const getSelectedValues = (searchParams: URLSearchParams, key: string) =>
   Array.from(new Set(searchParams.getAll(key).filter(Boolean)));
+
+const parseSelectedFilters = (
+  searchParams: URLSearchParams,
+): SelectedFiltersState => {
+  const specifications: Record<string, string[]> = {};
+
+  searchParams.forEach((_, key) => {
+    if (
+      key === CATEGORY_PARAM ||
+      key === SUB_CATEGORY_PARAM ||
+      key === SUB_SUB_CATEGORY_PARAM
+    ) {
+      return;
+    }
+
+    const values = getSelectedValues(searchParams, key);
+    if (values.length) specifications[key] = values;
+  });
+
+  return {
+    categories: getSelectedValues(searchParams, CATEGORY_PARAM),
+    subCategories: getSelectedValues(searchParams, SUB_CATEGORY_PARAM),
+    subSubCategories: getSelectedValues(searchParams, SUB_SUB_CATEGORY_PARAM),
+    specifications,
+  };
+};
+
+const buildFilterSearchParams = (selectedFilters: SelectedFiltersState) => {
+  const params = new URLSearchParams();
+
+  selectedFilters.categories.forEach((value) =>
+    params.append(CATEGORY_PARAM, value),
+  );
+  selectedFilters.subCategories.forEach((value) =>
+    params.append(SUB_CATEGORY_PARAM, value),
+  );
+  selectedFilters.subSubCategories.forEach((value) =>
+    params.append(SUB_SUB_CATEGORY_PARAM, value),
+  );
+
+  Object.entries(selectedFilters.specifications).forEach(([key, values]) => {
+    values.forEach((value) => params.append(key, value));
+  });
+
+  return params;
+};
 
 const getProductRefId = (value: ProductRef | undefined) =>
   typeof value === "string" ? value : (value?._id ?? value?.id);
@@ -260,6 +318,146 @@ function SidebarContent({
   );
 }
 
+const ProductResults = memo(function ProductResults({
+  activeTitle,
+  filteredProducts,
+  hasActiveFilters,
+  isLoading,
+  loadError,
+  onClearFilters,
+  scopedProducts,
+}: {
+  activeTitle: string;
+  filteredProducts: ProductRecord[];
+  hasActiveFilters: boolean;
+  isLoading: boolean;
+  loadError: string;
+  onClearFilters: () => void;
+  scopedProducts: ProductRecord[];
+}) {
+  return (
+    <div>
+      <div
+        className="mb-6 flex flex-col gap-3 rounded-2xl px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+        style={{ background: "#fdf5f3", border: "1px solid #f0e0dc" }}
+      >
+        <div>
+          <p
+            className="text-[10px] font-semibold uppercase tracking-[0.24em]"
+            style={{ color: "#d94f4f" }}
+          >
+            Live Inventory
+          </p>
+          <h2
+            className="mt-1 text-xl italic"
+            style={{
+              fontFamily: "'Georgia', serif",
+              color: "#1a1a1a",
+            }}
+          >
+            {activeTitle}
+          </h2>
+        </div>
+        <p className="text-xs" style={{ color: "#888" }}>
+          Showing{" "}
+          <span className="font-semibold" style={{ color: "#1a1a1a" }}>
+            {filteredProducts.length}
+          </span>
+          {scopedProducts.length !== filteredProducts.length && (
+            <span style={{ color: "#bbb" }}>
+              {" "}
+              of {scopedProducts.length}
+            </span>
+          )}{" "}
+          {filteredProducts.length === 1 ? "product" : "products"}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="ml-3 underline underline-offset-2 transition-colors hover:text-gray-700"
+              style={{ color: "#d94f4f", fontSize: "11px" }}
+            >
+              Clear filters
+            </button>
+          )}
+        </p>
+      </div>
+
+      {loadError ? (
+        <div
+          className="rounded-2xl px-6 py-8 text-center text-sm"
+          style={{
+            background: "#fdf5f3",
+            border: "1px solid #f0e0dc",
+            color: "#d94f4f",
+          }}
+        >
+          {loadError}
+        </div>
+      ) : isLoading ? (
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-2xl bg-gray-100"
+              style={{ aspectRatio: "3/4" }}
+            />
+          ))}
+        </div>
+      ) : filteredProducts.length ? (
+        <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-6 sm:gap-y-10 xl:grid-cols-3">
+          {filteredProducts.map((product) => (
+            <ProductCard
+              key={product._id}
+              name={product.name}
+              image={getProductPrimaryImage(product)}
+              href={getProductHref(product)}
+              badges={product.badges}
+              isSpecial={product.isSpecial}
+              details={{
+                sku: product.sku,
+                composition: getProductSpecification(product, "composition"),
+                color: getProductDisplayColor(product),
+                width: getProductSpecification(product, "width"),
+                weight: getProductSpecification(product, "weight"),
+              }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          className="rounded-2xl px-6 py-14 text-center"
+          style={{
+            background: "#fdf5f3",
+            border: "1px solid #f0e0dc",
+          }}
+        >
+          <p
+            className="text-2xl italic"
+            style={{
+              fontFamily: "'Georgia', serif",
+              color: "#1a1a1a",
+            }}
+          >
+            No products found
+          </p>
+          <p className="mt-3 text-xs" style={{ color: "#888" }}>
+            No results match the current filters.{" "}
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="underline underline-offset-2"
+              style={{ color: "#d94f4f" }}
+            >
+              View all products
+            </button>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+});
+
 export function ProductsPageDetails({
   mode = "default",
 }: {
@@ -267,11 +465,15 @@ export function ProductsPageDetails({
 }) {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [filters, setFilters] = useState<FiltersState>(EMPTY_FILTERS);
+  const [selectedFilters, setSelectedFilters] = useState<SelectedFiltersState>(
+    () =>
+      typeof window === "undefined"
+        ? EMPTY_SELECTED_FILTERS
+        : parseSelectedFilters(new URLSearchParams(window.location.search)),
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const searchParams = useSearchParams();
-  const router = useRouter();
 
   const { isSpecialSession, specialUser } = useAuth();
   const isSpecialCatalog = mode === "special";
@@ -283,28 +485,10 @@ export function ProductsPageDetails({
     [isSpecialSession, specialUser],
   );
 
-  const selectedCategories = useMemo(
-    () => getSelectedValues(searchParams, CATEGORY_PARAM),
-    [searchParams],
-  );
-  const selectedSubCategories = useMemo(
-    () => getSelectedValues(searchParams, SUB_CATEGORY_PARAM),
-    [searchParams],
-  );
-  const selectedSubSubCategories = useMemo(
-    () => getSelectedValues(searchParams, SUB_SUB_CATEGORY_PARAM),
-    [searchParams],
-  );
-
-  const selectedSpecificationFilters = useMemo(
-    () =>
-      filters.specifications.reduce<Record<string, string[]>>((acc, group) => {
-        const selectedValues = getSelectedValues(searchParams, group.key);
-        if (selectedValues.length) acc[group.key] = selectedValues;
-        return acc;
-      }, {}),
-    [filters.specifications, searchParams],
-  );
+  const selectedCategories = selectedFilters.categories;
+  const selectedSubCategories = selectedFilters.subCategories;
+  const selectedSubSubCategories = selectedFilters.subSubCategories;
+  const selectedSpecificationFilters = selectedFilters.specifications;
 
   useEffect(() => {
     const fetchPageData = async () => {
@@ -328,9 +512,30 @@ export function ProductsPageDetails({
     void fetchPageData();
   }, []);
 
+  const basePath = isSpecialCatalog ? "/special/products" : "/products";
+
+  const syncUrlWithFilters = useCallback(
+    (nextSelectedFilters: SelectedFiltersState) => {
+      if (typeof window === "undefined") return;
+      const query = buildFilterSearchParams(nextSelectedFilters).toString();
+      const nextUrl = query ? `${basePath}?${query}` : basePath;
+      window.history.replaceState(window.history.state, "", nextUrl);
+    },
+    [basePath],
+  );
+
   useEffect(() => {
-    setIsSidebarOpen(false);
-  }, [searchParams]);
+    const handlePopState = () => {
+      setSelectedFilters(
+        parseSelectedFilters(new URLSearchParams(window.location.search)),
+      );
+      setIsSidebarOpen(false);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   useEffect(() => {
     document.body.style.overflow = isSidebarOpen ? "hidden" : "";
     return () => {
@@ -619,58 +824,80 @@ export function ProductsPageDetails({
     selectedSubSubCategories.length +
     Object.keys(selectedSpecificationFilters).length;
 
-  const basePath = isSpecialCatalog ? "/special/products" : "/products";
-
   const toggleFilter = (paramKey: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    const currentValues = getSelectedValues(params, paramKey);
-    const nextValues = currentValues.includes(value)
-      ? currentValues.filter((item) => item !== value)
-      : [...currentValues, value];
+    setSelectedFilters((current) => {
+      const toggleValues = (values: string[]) =>
+        values.includes(value)
+          ? values.filter((item) => item !== value)
+          : [...values, value];
 
-    params.delete(paramKey);
-    nextValues.forEach((item) => params.append(paramKey, item));
+      let nextFilters: SelectedFiltersState = current;
 
-    if (paramKey === CATEGORY_PARAM) {
-      const allowedSubs = filters.subCategories
-        .filter((s) => s.parentId && nextValues.includes(s.parentId))
-        .map((s) => s.id)
-        .filter(Boolean) as string[];
-      const nextSubs = getSelectedValues(params, SUB_CATEGORY_PARAM).filter(
-        (i) => allowedSubs.includes(i),
-      );
-      params.delete(SUB_CATEGORY_PARAM);
-      nextSubs.forEach((i) => params.append(SUB_CATEGORY_PARAM, i));
-      const allowedSubSubs = filters.subSubCategories
-        .filter((s) => s.parentId && nextSubs.includes(s.parentId))
-        .map((s) => s.id)
-        .filter(Boolean) as string[];
-      const nextSubSubs = getSelectedValues(
-        params,
-        SUB_SUB_CATEGORY_PARAM,
-      ).filter((i) => allowedSubSubs.includes(i));
-      params.delete(SUB_SUB_CATEGORY_PARAM);
-      nextSubSubs.forEach((i) => params.append(SUB_SUB_CATEGORY_PARAM, i));
-    }
+      if (paramKey === CATEGORY_PARAM) {
+        const nextCategories = toggleValues(current.categories);
+        const allowedSubs = filters.subCategories
+          .filter((s) => s.parentId && nextCategories.includes(s.parentId))
+          .map((s) => s.id)
+          .filter(Boolean) as string[];
+        const nextSubCategories = current.subCategories.filter((item) =>
+          allowedSubs.includes(item),
+        );
+        const allowedSubSubs = filters.subSubCategories
+          .filter((s) => s.parentId && nextSubCategories.includes(s.parentId))
+          .map((s) => s.id)
+          .filter(Boolean) as string[];
 
-    if (paramKey === SUB_CATEGORY_PARAM) {
-      const allowedSubSubs = filters.subSubCategories
-        .filter((s) => s.parentId && nextValues.includes(s.parentId))
-        .map((s) => s.id)
-        .filter(Boolean) as string[];
-      const nextSubSubs = getSelectedValues(
-        params,
-        SUB_SUB_CATEGORY_PARAM,
-      ).filter((i) => allowedSubSubs.includes(i));
-      params.delete(SUB_SUB_CATEGORY_PARAM);
-      nextSubSubs.forEach((i) => params.append(SUB_SUB_CATEGORY_PARAM, i));
-    }
+        nextFilters = {
+          ...current,
+          categories: nextCategories,
+          subCategories: nextSubCategories,
+          subSubCategories: current.subSubCategories.filter((item) =>
+            allowedSubSubs.includes(item),
+          ),
+        };
+      } else if (paramKey === SUB_CATEGORY_PARAM) {
+        const nextSubCategories = toggleValues(current.subCategories);
+        const allowedSubSubs = filters.subSubCategories
+          .filter((s) => s.parentId && nextSubCategories.includes(s.parentId))
+          .map((s) => s.id)
+          .filter(Boolean) as string[];
 
-    const query = params.toString();
-    router.replace(query ? `${basePath}?${query}` : basePath);
+        nextFilters = {
+          ...current,
+          subCategories: nextSubCategories,
+          subSubCategories: current.subSubCategories.filter((item) =>
+            allowedSubSubs.includes(item),
+          ),
+        };
+      } else if (paramKey === SUB_SUB_CATEGORY_PARAM) {
+        nextFilters = {
+          ...current,
+          subSubCategories: toggleValues(current.subSubCategories),
+        };
+      } else {
+        const currentSpecValues = current.specifications[paramKey] ?? [];
+        const nextSpecValues = toggleValues(currentSpecValues);
+        const nextSpecifications = { ...current.specifications };
+
+        if (nextSpecValues.length) nextSpecifications[paramKey] = nextSpecValues;
+        else delete nextSpecifications[paramKey];
+
+        nextFilters = {
+          ...current,
+          specifications: nextSpecifications,
+        };
+      }
+
+      syncUrlWithFilters(nextFilters);
+      return nextFilters;
+    });
+    setIsSidebarOpen(false);
   };
 
-  const handleClearFilters = () => router.replace(basePath);
+  const handleClearFilters = () => {
+    setSelectedFilters(EMPTY_SELECTED_FILTERS);
+    syncUrlWithFilters(EMPTY_SELECTED_FILTERS);
+  };
 
   const sharedSidebarProps = {
     selectedCategories,
@@ -816,131 +1043,15 @@ export function ProductsPageDetails({
               </aside>
 
               {/* Main content */}
-              <div>
-                {/* Results header */}
-                <div
-                  className="mb-6 flex flex-col gap-3 rounded-2xl px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
-                  style={{ background: "#fdf5f3", border: "1px solid #f0e0dc" }}
-                >
-                  <div>
-                    <p
-                      className="text-[10px] font-semibold uppercase tracking-[0.24em]"
-                      style={{ color: "#d94f4f" }}
-                    >
-                      Live Inventory
-                    </p>
-                    <h2
-                      className="mt-1 text-xl italic"
-                      style={{
-                        fontFamily: "'Georgia', serif",
-                        color: "#1a1a1a",
-                      }}
-                    >
-                      {activeTitle}
-                    </h2>
-                  </div>
-                  <p className="text-xs" style={{ color: "#888" }}>
-                    Showing{" "}
-                    <span
-                      className="font-semibold"
-                      style={{ color: "#1a1a1a" }}
-                    >
-                      {filteredProducts.length}
-                    </span>
-                    {scopedProducts.length !== filteredProducts.length && (
-                      <span style={{ color: "#bbb" }}>
-                        {" "}
-                        of {scopedProducts.length}
-                      </span>
-                    )}{" "}
-                    {filteredProducts.length === 1 ? "product" : "products"}
-                    {hasActiveFilters && (
-                      <Link
-                        href={basePath}
-                        className="ml-3 underline underline-offset-2 transition-colors hover:text-gray-700"
-                        style={{ color: "#d94f4f", fontSize: "11px" }}
-                      >
-                        Clear filters
-                      </Link>
-                    )}
-                  </p>
-                </div>
-
-                {/* Products grid */}
-                {loadError ? (
-                  <div
-                    className="rounded-2xl px-6 py-8 text-center text-sm"
-                    style={{
-                      background: "#fdf5f3",
-                      border: "1px solid #f0e0dc",
-                      color: "#d94f4f",
-                    }}
-                  >
-                    {loadError}
-                  </div>
-                ) : isLoading ? (
-                  <div className="grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="animate-pulse rounded-2xl bg-gray-100"
-                        style={{ aspectRatio: "3/4" }}
-                      />
-                    ))}
-                  </div>
-                ) : filteredProducts.length ? (
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-6 sm:gap-y-10 xl:grid-cols-3">
-                    {filteredProducts.map((product) => (
-                      <ProductCard
-                        key={product._id}
-                        name={product.name}
-                        image={getProductPrimaryImage(product)}
-                        href={getProductHref(product)}
-                        badges={product.badges}
-                        isSpecial={product.isSpecial}
-                        details={{
-                          sku: product.sku,
-                          composition: getProductSpecification(
-                            product,
-                            "composition",
-                          ),
-                          color: getProductDisplayColor(product),
-                          width: getProductSpecification(product, "width"),
-                          weight: getProductSpecification(product, "weight"),
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div
-                    className="rounded-2xl px-6 py-14 text-center"
-                    style={{
-                      background: "#fdf5f3",
-                      border: "1px solid #f0e0dc",
-                    }}
-                  >
-                    <p
-                      className="text-2xl italic"
-                      style={{
-                        fontFamily: "'Georgia', serif",
-                        color: "#1a1a1a",
-                      }}
-                    >
-                      No products found
-                    </p>
-                    <p className="mt-3 text-xs" style={{ color: "#888" }}>
-                      No results match the current filters.{" "}
-                      <Link
-                        href={basePath}
-                        className="underline underline-offset-2"
-                        style={{ color: "#d94f4f" }}
-                      >
-                        View all products
-                      </Link>
-                    </p>
-                  </div>
-                )}
-              </div>
+              <ProductResults
+                activeTitle={activeTitle}
+                filteredProducts={filteredProducts}
+                hasActiveFilters={hasActiveFilters}
+                isLoading={isLoading}
+                loadError={loadError}
+                onClearFilters={handleClearFilters}
+                scopedProducts={scopedProducts}
+              />
             </div>
           </div>
         </section>

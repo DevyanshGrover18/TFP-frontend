@@ -3,14 +3,16 @@
 import React, { useEffect, useState } from "react";
 import { Phone, Mail, Globe } from "lucide-react";
 import Link from "next/link";
-import { getAllProducts, getProductHref, type ProductRecord } from "@/app/services/productsService";
+import { getAllCategories, type Category } from "@/app/services/categoriesService";
 
 const Footer = () => {
-  const [products, setProducts] = useState<ProductRecord[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    getAllProducts()
-      .then((res) => setProducts((res.products ?? []).slice(0, 6)))
+    getAllCategories()
+      .then((res) =>
+        setCategories((res.categories ?? []).filter((category) => category.level === 1).slice(0, 6))
+      )
       .catch(() => {});
   }, []);
 
@@ -36,7 +38,7 @@ const Footer = () => {
           <div className="flex flex-col gap-4">
             <h4 className="text-sm font-semibold" style={{ color: "#1a1a1a" }}>Quick Links</h4>
             <ul className="flex flex-col gap-2.5">
-              {["Home", "About Us", "Products", "Capabilities", "Sustainability", "Contact"].map((item) => (
+              {["Home", "About Us", "Contact"].map((item) => (
                 <li key={item}>
                   <Link href="#" className="text-xs text-gray-500 transition-colors hover:text-gray-900">
                     {item}
@@ -48,19 +50,19 @@ const Footer = () => {
 
           {/* Products — live from API */}
           <div className="flex flex-col gap-4">
-            <h4 className="text-sm font-semibold" style={{ color: "#1a1a1a" }}>Products</h4>
+            <h4 className="text-sm font-semibold" style={{ color: "#1a1a1a" }}>Categories</h4>
             <ul className="flex flex-col gap-2.5">
-              {products.length === 0
+              {categories.length === 0
                 ? Array.from({ length: 6 }).map((_, i) => (
                     <li key={i} className="h-3 w-28 animate-pulse rounded bg-gray-200" />
                   ))
-                : products.map((product) => (
-                    <li key={product._id}>
+                : categories.map((category) => (
+                    <li key={category._id}>
                       <Link
-                        href={getProductHref(product)}
+                        href={`/products?category=${category._id}`}
                         className="text-xs text-gray-500 transition-colors hover:text-gray-900 line-clamp-1"
                       >
-                        {product.name}
+                        {category.name}
                       </Link>
                     </li>
                   ))}

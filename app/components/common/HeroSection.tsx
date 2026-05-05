@@ -2,7 +2,7 @@
 
 export default function HeroSection() {
   return (
-    <section className="relative w-full h-[480px] sm:h-[520px] lg:h-[560px] overflow-hidden">
+    <section className="relative w-full h-[480px] sm:h-[520px] lg:h-[650px] overflow-hidden">
       {/* Gradient Background */}
       <div className="absolute inset-0 bg-linear-to-bl from-[#ea7939] via-[#fa645e] to-[#f13462]" />
 
@@ -16,9 +16,9 @@ export default function HeroSection() {
       <div className="relative z-[2] flex h-full py-6">
 
         {/* Left Content */}
-        <div className="flex flex-col justify-center p-6 sm:px-12 lg:pl-20 md:py-6 lg:pr-12 w-full lg:w-[65%] text-white">
+        <div className="flex flex-col justify-center p-6 sm:px-12 lg:pl-20  lg:pr-12 w-full lg:w-[65%] text-white">
           <h1
-            className="font-serif italic font-bold text-4xl sm:text-5xl lg:text-6xl leading-[1.05] tracking-[-0.02em] max-w-[560px]"
+            className="font-serif italic my-4 font-bold text-4xl sm:text-5xl lg:text-6xl leading-[1.05] tracking-[-0.02em] max-w-[560px]"
             style={{ fontFamily: "'Georgia', serif" }}
           >
             Sourcing Excellence
@@ -62,7 +62,7 @@ export default function HeroSection() {
         </div>
 
         {/* Right Image Section — desktop only */}
-        <div className="relative flex-1 hidden lg:block">
+        <div className="relative flex-1 hidden lg:block scale-120">
           {/* Diamond frame decorative layers */}
           <div className="absolute right-[45%] top-[41%] -translate-y-1/2 w-[300px] h-[400px] scale-120 -rotate-45 overflow-hidden rounded-[32px] bg-white/10 z-[1]" />
           <div className="absolute right-[47%] top-[49%] -translate-y-1/2 w-[300px] h-[400px] scale-120 -rotate-45 overflow-hidden rounded-[32px] bg-white/10 z-[1]" />
