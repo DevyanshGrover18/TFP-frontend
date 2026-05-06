@@ -1,6 +1,13 @@
 "use client";
 
-import { Suspense, memo, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import ProductCard from "../../components/common/ProductCard";
 import {
   getAllProducts,
@@ -39,6 +46,7 @@ type SelectedFiltersState = {
   subCategories: string[];
   subSubCategories: string[];
   specifications: Record<string, string[]>;
+  query: string;
 };
 
 type ProductRef = string | { _id?: string; id?: string; name?: string };
@@ -55,11 +63,13 @@ const EMPTY_SELECTED_FILTERS: SelectedFiltersState = {
   subCategories: [],
   subSubCategories: [],
   specifications: {},
+  query: "",
 };
 
 const CATEGORY_PARAM = "category";
 const SUB_CATEGORY_PARAM = "subcategory";
 const SUB_SUB_CATEGORY_PARAM = "subsubcategory";
+const SEARCH_QUERY_PARAM = "q";
 
 const formatFilterLabel = (value: string) =>
   value.replace(/[-_]+/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
@@ -76,11 +86,11 @@ const parseSelectedFilters = (
     if (
       key === CATEGORY_PARAM ||
       key === SUB_CATEGORY_PARAM ||
-      key === SUB_SUB_CATEGORY_PARAM
+      key === SUB_SUB_CATEGORY_PARAM ||
+      key === SEARCH_QUERY_PARAM // ← add this
     ) {
       return;
     }
-
     const values = getSelectedValues(searchParams, key);
     if (values.length) specifications[key] = values;
   });
@@ -90,6 +100,7 @@ const parseSelectedFilters = (
     subCategories: getSelectedValues(searchParams, SUB_CATEGORY_PARAM),
     subSubCategories: getSelectedValues(searchParams, SUB_SUB_CATEGORY_PARAM),
     specifications,
+    query: searchParams.get(SEARCH_QUERY_PARAM) || "",
   };
 };
 
@@ -109,6 +120,10 @@ const buildFilterSearchParams = (selectedFilters: SelectedFiltersState) => {
   Object.entries(selectedFilters.specifications).forEach(([key, values]) => {
     values.forEach((value) => params.append(key, value));
   });
+
+  if (selectedFilters.query) {
+    params.set(SEARCH_QUERY_PARAM, selectedFilters.query);
+  }
 
   return params;
 };
@@ -221,6 +236,7 @@ function SidebarContent({
   toggleFilter: (paramKey: string, value: string) => void;
   onClearFilters?: () => void;
 }) {
+  console.log(categoryOptions);
   return (
     <>
       <SidebarFilterSection
@@ -364,10 +380,7 @@ const ProductResults = memo(function ProductResults({
             {filteredProducts.length}
           </span>
           {scopedProducts.length !== filteredProducts.length && (
-            <span style={{ color: "#bbb" }}>
-              {" "}
-              of {scopedProducts.length}
-            </span>
+            <span style={{ color: "#bbb" }}> of {scopedProducts.length}</span>
           )}{" "}
           {filteredProducts.length === 1 ? "product" : "products"}
           {hasActiveFilters && (
@@ -489,6 +502,12 @@ export function ProductsPageDetails({
   const selectedSubCategories = selectedFilters.subCategories;
   const selectedSubSubCategories = selectedFilters.subSubCategories;
   const selectedSpecificationFilters = selectedFilters.specifications;
+
+  useEffect(() => {
+    setSelectedFilters(
+      parseSelectedFilters(new URLSearchParams(window.location.search)),
+    );
+  }, []);
 
   useEffect(() => {
     const fetchPageData = async () => {
@@ -626,6 +645,23 @@ export function ProductsPageDetails({
     return true;
   };
 
+  const matchesSearchQuery = (product: ProductRecord, query: string) => {
+    if (!query) return true;
+    const q = query.toLowerCase().trim();
+
+    return (
+      product.name.toLowerCase().includes(q) ||
+      (typeof product.categoryId === "object" &&
+        product.categoryId?.name?.toLowerCase().includes(q)) ||
+      (typeof product.subCategoryId === "object" &&
+        product.subCategoryId?.name?.toLowerCase().includes(q)) ||
+      (typeof product.subSubCategoryId === "object" &&
+        product.subSubCategoryId?.name?.toLowerCase().includes(q)) ||
+      product.tags?.some((t) => t.toLowerCase().includes(q)) ||
+      product.sku.toLowerCase().includes(q)
+    );
+  };
+
   const getProductsForCounts = useCallback(
     ({ ignoreParamKey }: { ignoreParamKey?: string }) =>
       scopedProducts.filter((product) => {
@@ -664,11 +700,13 @@ export function ProductsPageDetails({
                 ),
               )
             : selectedSpecificationFilters;
-        return matchesSpecificationFilters(product, specFilters);
+        if (!matchesSpecificationFilters(product, specFilters)) return false;
+        return matchesSearchQuery(product, selectedFilters.query);
       }),
     [
       scopedProducts,
       selectedCategories,
+      selectedFilters.query,
       selectedSpecificationFilters,
       selectedSubCategories,
       selectedSubSubCategories,
@@ -693,14 +731,14 @@ export function ProductsPageDetails({
           !matchesMultiValueFilter(selectedSubSubCategories, subSubCategoryId)
         )
           return false;
-        return matchesSpecificationFilters(
-          product,
-          selectedSpecificationFilters,
-        );
+        if (!matchesSpecificationFilters(product, selectedSpecificationFilters))
+          return false;
+        return matchesSearchQuery(product, selectedFilters.query);
       }),
     [
       scopedProducts,
       selectedCategories,
+      selectedFilters.query,
       selectedSpecificationFilters,
       selectedSubCategories,
       selectedSubSubCategories,
@@ -803,11 +841,14 @@ export function ProductsPageDetails({
       return `${selectedSubCategories.length} sub-category selections`;
     if (selectedCategories.length)
       return `${selectedCategories.length} category selections`;
+    if (selectedFilters.query)
+      return `Search results for "${selectedFilters.query}"`;
     if (isSpecialCatalog) return "Your special catalog";
     return "All Products";
   }, [
     isSpecialCatalog,
     selectedCategories,
+    selectedFilters.query,
     selectedSubCategories,
     selectedSubSubCategories,
   ]);
@@ -816,13 +857,15 @@ export function ProductsPageDetails({
     selectedCategories.length > 0 ||
     selectedSubCategories.length > 0 ||
     selectedSubSubCategories.length > 0 ||
-    Object.keys(selectedSpecificationFilters).length > 0;
+    Object.keys(selectedSpecificationFilters).length > 0 ||
+    selectedFilters.query.length > 0;
 
   const activeFilterCount =
     selectedCategories.length +
     selectedSubCategories.length +
     selectedSubSubCategories.length +
-    Object.keys(selectedSpecificationFilters).length;
+    Object.keys(selectedSpecificationFilters).length +
+    (selectedFilters.query ? 1 : 0);
 
   const toggleFilter = (paramKey: string, value: string) => {
     setSelectedFilters((current) => {
@@ -879,7 +922,8 @@ export function ProductsPageDetails({
         const nextSpecValues = toggleValues(currentSpecValues);
         const nextSpecifications = { ...current.specifications };
 
-        if (nextSpecValues.length) nextSpecifications[paramKey] = nextSpecValues;
+        if (nextSpecValues.length)
+          nextSpecifications[paramKey] = nextSpecValues;
         else delete nextSpecifications[paramKey];
 
         nextFilters = {

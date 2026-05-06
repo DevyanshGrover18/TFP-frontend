@@ -61,6 +61,9 @@ export default function SearchBar({
     const fuse = new Fuse(allProducts, {
       keys: [
         { name: "name", weight: 2 },
+        { name: "categoryId.name", weight: 1.5 },
+        { name: "subCategoryId.name", weight: 1.5 },
+        { name: "subSubCategoryId.name", weight: 1.5 },
         { name: "tags", weight: 1.5 },
         { name: "specifications.value", weight: 1 },
         { name: "colorCode", weight: 1 },
@@ -93,15 +96,19 @@ export default function SearchBar({
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!results.length) return;
-    if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown" && results.length > 0) {
       e.preventDefault();
       setActiveIndex((i) => Math.min(i + 1, results.length - 1));
-    } else if (e.key === "ArrowUp") {
+    } else if (e.key === "ArrowUp" && results.length > 0) {
       e.preventDefault();
       setActiveIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && activeIndex >= 0) {
-      navigate(results[activeIndex]);
+    } else if (e.key === "Enter") {
+      if (activeIndex >= 0 && results[activeIndex]) {
+        navigate(results[activeIndex]);
+      } else if (query.trim()) {
+        router.push(`/products?q=${encodeURIComponent(query.trim())}`);
+        onClose();
+      }
     } else if (e.key === "Escape") {
       onClose();
     }

@@ -100,6 +100,16 @@ const emptyValues: ProductFormValues = {
   tags: [],
 };
 
+// Which top-level fields are required
+type ValidationErrors = {
+  name?: boolean;
+  sku?: boolean;
+  colorCode?: boolean;
+  categoryId?: boolean;
+  description?: boolean;
+  mainImage?: boolean;
+};
+
 function normalizeCategoryRef(value: CategoryRefInput): ProductCategoryRef {
   if (typeof value === "string") {
     return { id: value, name: "" };
@@ -236,6 +246,13 @@ function updatePreviewListEntry(
   return next;
 }
 
+// Helper: returns border class based on whether field has an error
+function fieldBorder(hasError: boolean) {
+  return hasError
+    ? "border-red-500 focus:border-red-500"
+    : "border-gray-200 focus:border-red-400";
+}
+
 const ProductModal = ({
   isOpen,
   mode,
@@ -265,6 +282,18 @@ const ProductModal = ({
   const [variantGalleryPreviews, setVariantGalleryPreviews] = useState<
     Record<number, string[]>
   >({});
+
+  // Track validation errors after a submit attempt
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  // Track per-variant validation errors: array of sets of invalid field names
+  const [variantErrors, setVariantErrors] = useState<
+    Array<Partial<Record<keyof ProductVariant, boolean>>>
+  >([]);
+  // Track per-specification errors
+  const [specErrors, setSpecErrors] = useState<
+    Array<{ key?: boolean; value?: boolean }>
+  >([]);
+
   const availableBadges = useMemo(() => {
     const seen = new Set<string>();
     const merged: BadgeRecord[] = [];
@@ -300,6 +329,9 @@ const ProductModal = ({
     setProductGalleryPreviews([]);
     setVariantMainPreviews({});
     setVariantGalleryPreviews({});
+    setValidationErrors({});
+    setVariantErrors([]);
+    setSpecErrors([]);
   }, [initialValues, isOpen]);
 
   const selectedRoot = useMemo(
@@ -327,6 +359,10 @@ const ProductModal = ({
     value: ProductFormValues[K],
   ) => {
     setValues((current) => ({ ...current, [field]: value }));
+    // Clear validation error for that field when user edits it
+    if (field in validationErrors) {
+      setValidationErrors((prev) => ({ ...prev, [field]: false }));
+    }
   };
 
   const updateMediaField = (
@@ -340,6 +376,9 @@ const ProductModal = ({
         [field]: value,
       },
     }));
+    if (field === "mainImage") {
+      setValidationErrors((prev) => ({ ...prev, mainImage: false }));
+    }
   };
 
   const updateVariant = <K extends keyof ProductVariant>(
@@ -353,6 +392,14 @@ const ProductModal = ({
         variantIndex === index ? { ...variant, [field]: value } : variant,
       ),
     }));
+    // Clear variant error
+    setVariantErrors((prev) => {
+      const next = [...prev];
+      if (next[index]) {
+        next[index] = { ...next[index], [field]: false };
+      }
+      return next;
+    });
   };
 
   const handleSingleImageChange = async (
@@ -439,14 +486,13 @@ const ProductModal = ({
 
   const handleRootChange = (value: string) => {
     const nextRoot = findNode(categories, value);
-    const nextSub = nextRoot?.children?.[0] ?? null;
-    const nextSubSub = nextSub?.children?.[0] ?? null;
     setValues((current) => ({
       ...current,
       categoryId: toCategoryRef(nextRoot),
-      subCategoryId: toCategoryRef(nextSub),
-      subSubCategoryId: toCategoryRef(nextSubSub),
+      subCategoryId: { id: "", name: "" },
+      subSubCategoryId: { id: "", name: "" },
     }));
+    setValidationErrors((prev) => ({ ...prev, categoryId: false }));
   };
 
   const handleSubChange = (value: string) => {
@@ -454,7 +500,7 @@ const ProductModal = ({
     setValues((current) => ({
       ...current,
       subCategoryId: toCategoryRef(nextSub),
-      subSubCategoryId: toCategoryRef(nextSub?.children?.[0] ?? null),
+      subSubCategoryId: { id: "", name: "" },
     }));
   };
 
@@ -479,6 +525,13 @@ const ProductModal = ({
             : specification,
       ),
     }));
+    setSpecErrors((prev) => {
+      const next = [...prev];
+      if (next[index]) {
+        next[index] = { ...next[index], [field]: false };
+      }
+      return next;
+    });
   };
 
   const removeSpecification = (index: number) => {
@@ -488,6 +541,7 @@ const ProductModal = ({
         (_, specificationIndex) => specificationIndex !== index,
       ),
     }));
+    setSpecErrors((prev) => prev.filter((_, i) => i !== index));
   };
 
   const addVariant = () => {
@@ -515,6 +569,7 @@ const ProductModal = ({
         (_, variantIndex) => variantIndex !== index,
       ),
     }));
+    setVariantErrors((prev) => prev.filter((_, i) => i !== index));
   };
 
   const selectBadge = (badgeName: string) => {
@@ -549,6 +604,12 @@ const ProductModal = ({
     );
 
     if (incompleteSpecification) {
+      // Mark incomplete specs
+      const newSpecErrors = trimmedSpecifications.map((spec) => ({
+        key: !spec.key,
+        value: !spec.value,
+      }));
+      setSpecErrors(newSpecErrors);
       setActiveTab("specifications");
       setError("Each specification needs both a key and a value");
       return;
@@ -594,27 +655,38 @@ const ProductModal = ({
       variants: trimmedVariants,
     };
 
+    // Validate basic fields
+    const basicErrors: ValidationErrors = {
+      name: !trimmed.name,
+      sku: !trimmed.sku,
+      colorCode: !trimmed.colorCode,
+      categoryId: !trimmed.categoryId.id,
+      description: !trimmed.description,
+    };
+
     if (
-      !trimmed.name ||
-      !trimmed.sku ||
-      !trimmed.colorCode ||
-      !trimmed.categoryId.id ||
-      !trimmed.subCategoryId.id ||
-      !trimmed.subSubCategoryId.id ||
-      !trimmed.description
+      basicErrors.name ||
+      basicErrors.sku ||
+      basicErrors.colorCode ||
+      basicErrors.categoryId ||
+      basicErrors.description
     ) {
+      setValidationErrors(basicErrors);
       setActiveTab("basic");
       setError("Complete all required basic information fields");
       return;
     }
 
+    // Validate main image
     if (!trimmed.media.mainImage) {
+      setValidationErrors((prev) => ({ ...prev, mainImage: true }));
       setActiveTab("media");
       setError("A main product image is required");
       return;
     }
 
-    const invalidVariant = trimmed.variants.find(
+    // Validate variants
+    const invalidVariantIndex = trimmed.variants.findIndex(
       (variant) =>
         !variant.name ||
         !variant.color ||
@@ -622,7 +694,14 @@ const ProductModal = ({
         !variant.mainImage,
     );
 
-    if (invalidVariant) {
+    if (invalidVariantIndex !== -1) {
+      const newVariantErrors = trimmed.variants.map((variant) => ({
+        name: !variant.name,
+        color: !variant.color,
+        colorCode: !variant.colorCode,
+        mainImage: !variant.mainImage,
+      }));
+      setVariantErrors(newVariantErrors);
       setActiveTab("variants");
       setError(
         "Each variant requires name, color, color code, and a main image",
@@ -631,50 +710,70 @@ const ProductModal = ({
     }
 
     setError("");
+    setValidationErrors({});
+    setVariantErrors([]);
+    setSpecErrors([]);
     void onSubmit(trimmed);
   };
 
   const renderBasicTab = () => (
     <div className="grid gap-4 md:grid-cols-2">
       <label className="space-y-2 text-sm font-medium text-gray-700">
-        <span>Product name</span>
+        <span>
+          Product name <span className="text-red-500">*</span>
+        </span>
         <input
           value={values.name}
           onChange={(event) => updateField("name", event.target.value)}
           type="text"
           placeholder="Product name"
-          className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
+          className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${fieldBorder(!!validationErrors.name)}`}
         />
+        {validationErrors.name && (
+          <p className="text-xs text-red-500">Product name is required</p>
+        )}
       </label>
 
       <label className="space-y-2 text-sm font-medium text-gray-700">
-        <span>SKU / Article Number</span>
+        <span>
+          SKU / Article Number <span className="text-red-500">*</span>
+        </span>
         <input
           value={values.sku}
           onChange={(event) => updateField("sku", event.target.value)}
           type="text"
           placeholder="ART-001"
-          className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
+          className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${fieldBorder(!!validationErrors.sku)}`}
         />
+        {validationErrors.sku && (
+          <p className="text-xs text-red-500">SKU is required</p>
+        )}
       </label>
 
       <label className="space-y-2 text-sm font-medium text-gray-700">
-        <span>Color code</span>
+        <span>
+          Color code <span className="text-red-500">*</span>
+        </span>
         <input
           value={values.colorCode}
           onChange={(event) => updateField("colorCode", event.target.value)}
           type="text"
           placeholder="#C1A37C"
-          className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
+          className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${fieldBorder(!!validationErrors.colorCode)}`}
         />
+        {validationErrors.colorCode && (
+          <p className="text-xs text-red-500">Color code is required</p>
+        )}
       </label>
 
       <label className="space-y-2 text-sm font-medium text-gray-700">
-        <span>Category</span>
+        <span>
+          Category <span className="text-red-500">*</span>
+        </span>
         <select
           value={values.categoryId.id}
           onChange={(event) => handleRootChange(event.target.value)}
-          className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
+          className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${fieldBorder(!!validationErrors.categoryId)}`}
         >
           <option value="">Select category</option>
           {categories.map((category) => (
@@ -683,6 +782,9 @@ const ProductModal = ({
             </option>
           ))}
         </select>
+        {validationErrors.categoryId && (
+          <p className="text-xs text-red-500">Category is required</p>
+        )}
       </label>
 
       <label className="space-y-2 text-sm font-medium text-gray-700">
@@ -798,7 +900,6 @@ const ProductModal = ({
           }`}
         >
           <div className="flex items-center gap-3">
-            {/* Icon */}
             <div
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors duration-200 ${
                 values.isSpecial ? "bg-amber-100" : "bg-gray-200"
@@ -818,7 +919,6 @@ const ProductModal = ({
               </svg>
             </div>
 
-            {/* Text */}
             <div className="text-left">
               <p
                 className={`text-sm font-medium ${values.isSpecial ? "text-amber-800" : "text-gray-700"}`}
@@ -835,7 +935,6 @@ const ProductModal = ({
             </div>
           </div>
 
-          {/* Toggle pill */}
           <div
             className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ${
               values.isSpecial ? "bg-amber-400" : "bg-gray-300"
@@ -851,14 +950,19 @@ const ProductModal = ({
       </div>
 
       <label className="space-y-2 text-sm font-medium text-gray-700 md:col-span-2">
-        <span>Description</span>
+        <span>
+          Description <span className="text-red-500">*</span>
+        </span>
         <textarea
           value={values.description}
           onChange={(event) => updateField("description", event.target.value)}
           rows={5}
           placeholder="Describe the product"
-          className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
+          className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${fieldBorder(!!validationErrors.description)}`}
         />
+        {validationErrors.description && (
+          <p className="text-xs text-red-500">Description is required</p>
+        )}
       </label>
     </div>
   );
@@ -883,79 +987,107 @@ const ProductModal = ({
       </div>
 
       {values.variants.length ? (
-        values.variants.map((variant, index) => (
-          <div
-            key={variant.id}
-            className="rounded-3xl border border-gray-200 p-4"
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-900">
-                Variant {index + 1}
-              </p>
+        values.variants.map((variant, index) => {
+          const vErr = variantErrors[index] ?? {};
+          return (
+            <div
+              key={variant.id}
+              className="rounded-3xl border border-gray-200 p-4"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm font-semibold text-gray-900">
+                  Variant {index + 1}
+                </p>
 
-              <button
-                type="button"
-                onClick={() => removeVariant(index)}
-                className="rounded-xl flex items-center border cursor-pointer border-gray-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
-              >
-                <Trash2 className="h-4" /> Remove
-              </button>
+                <button
+                  type="button"
+                  onClick={() => removeVariant(index)}
+                  className="rounded-xl flex items-center border cursor-pointer border-gray-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4" /> Remove
+                </button>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-4">
+                <label className="space-y-2 text-sm font-medium text-gray-700">
+                  <span>SKU</span>
+                  <input
+                    value={variant.sku}
+                    onChange={(event) =>
+                      updateVariant(index, "sku", event.target.value)
+                    }
+                    type="text"
+                    placeholder="Variant SKU"
+                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm font-medium text-gray-700">
+                  <span>
+                    Name <span className="text-red-500">*</span>
+                  </span>
+                  <input
+                    value={variant.name}
+                    onChange={(event) =>
+                      updateVariant(index, "name", event.target.value)
+                    }
+                    type="text"
+                    placeholder="Variant name"
+                    className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${fieldBorder(!!vErr.name)}`}
+                  />
+                  {vErr.name && (
+                    <p className="text-xs text-red-500">Name is required</p>
+                  )}
+                </label>
+
+                <label className="space-y-2 text-sm font-medium text-gray-700">
+                  <span>
+                    Color <span className="text-red-500">*</span>
+                  </span>
+                  <input
+                    value={variant.color}
+                    onChange={(event) =>
+                      updateVariant(index, "color", event.target.value)
+                    }
+                    type="text"
+                    placeholder="Beige"
+                    className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${fieldBorder(!!vErr.color)}`}
+                  />
+                  {vErr.color && (
+                    <p className="text-xs text-red-500">Color is required</p>
+                  )}
+                </label>
+
+                <label className="space-y-2 text-sm font-medium text-gray-700">
+                  <span>
+                    Color code <span className="text-red-500">*</span>
+                  </span>
+                  <input
+                    value={variant.colorCode}
+                    onChange={(event) =>
+                      updateVariant(index, "colorCode", event.target.value)
+                    }
+                    type="text"
+                    placeholder="#C1A37C"
+                    className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${fieldBorder(!!vErr.colorCode)}`}
+                  />
+                  {vErr.colorCode && (
+                    <p className="text-xs text-red-500">
+                      Color code is required
+                    </p>
+                  )}
+                </label>
+              </div>
+
+              {vErr.mainImage && (
+                <p className="mt-3 text-xs text-red-500">
+                  A main image is required for this variant — add it in the
+                  Media tab
+                </p>
+              )}
             </div>
-
-            <div className="grid gap-4 md:grid-cols-4">
-              <label className="space-y-2 text-sm font-medium text-gray-700">
-                <span>SKU</span>
-                <input
-                  value={variant.sku}
-                  onChange={(event) =>
-                    updateVariant(index, "sku", event.target.value)
-                  }
-                  type="text"
-                  placeholder="Variant name"
-                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
-                />
-              </label>
-              <label className="space-y-2 text-sm font-medium text-gray-700">
-                <span>Name</span>
-                <input
-                  value={variant.name}
-                  onChange={(event) =>
-                    updateVariant(index, "name", event.target.value)
-                  }
-                  type="text"
-                  placeholder="Variant name"
-                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
-                />
-              </label>
-
-              <label className="space-y-2 text-sm font-medium text-gray-700">
-                <span>Color</span>
-                <input
-                  value={variant.color}
-                  onChange={(event) =>
-                    updateVariant(index, "color", event.target.value)
-                  }
-                  type="text"
-                  placeholder="Beige"
-                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
-                />
-              </label>
-
-              <label className="space-y-2 text-sm font-medium text-gray-700">
-                <span>Color code</span>
-                <input
-                  value={variant.colorCode}
-                  onChange={(event) =>
-                    updateVariant(index, "colorCode", event.target.value)
-                  }
-                  type="text"
-                  placeholder="#C1A37C"
-                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
-                />
-              </label>
-            </div>
-          </div>
-        ))
+          );
+        })
       ) : (
         <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
           No variants yet.
@@ -986,38 +1118,51 @@ const ProductModal = ({
 
       {values.specifications.length ? (
         <div className="space-y-3">
-          {values.specifications.map((specification, index) => (
-            <div
-              key={index}
-              className="grid gap-3 rounded-2xl border border-gray-200 p-4 md:grid-cols-[1fr_1fr_auto]"
-            >
-              <input
-                value={specification.key}
-                onChange={(event) =>
-                  updateSpecification(index, "key", event.target.value)
-                }
-                type="text"
-                placeholder="Key"
-                className="rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
-              />
-              <input
-                value={specification.value}
-                onChange={(event) =>
-                  updateSpecification(index, "value", event.target.value)
-                }
-                type="text"
-                placeholder="Value"
-                className="rounded-2xl border border-gray-200 px-4 py-3 outline-none transition focus:border-red-400"
-              />
-              <button
-                type="button"
-                onClick={() => removeSpecification(index)}
-                className="rounded-2xl border cursor-pointer flex items-center border-gray-200 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50"
+          {values.specifications.map((specification, index) => {
+            const sErr = specErrors[index] ?? {};
+            return (
+              <div
+                key={index}
+                className="grid gap-3 rounded-2xl border border-gray-200 p-4 md:grid-cols-[1fr_1fr_auto]"
               >
-                <Trash2 className="h-4" /> Remove
-              </button>
-            </div>
-          ))}
+                <div className="space-y-1">
+                  <input
+                    value={specification.key}
+                    onChange={(event) =>
+                      updateSpecification(index, "key", event.target.value)
+                    }
+                    type="text"
+                    placeholder="Key"
+                    className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${fieldBorder(!!sErr.key)}`}
+                  />
+                  {sErr.key && (
+                    <p className="text-xs text-red-500">Key is required</p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <input
+                    value={specification.value}
+                    onChange={(event) =>
+                      updateSpecification(index, "value", event.target.value)
+                    }
+                    type="text"
+                    placeholder="Value"
+                    className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${fieldBorder(!!sErr.value)}`}
+                  />
+                  {sErr.value && (
+                    <p className="text-xs text-red-500">Value is required</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeSpecification(index)}
+                  className="rounded-2xl border cursor-pointer flex items-center border-gray-200 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4" /> Remove
+                </button>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
@@ -1041,7 +1186,9 @@ const ProductModal = ({
 
         <div className="mt-4 grid gap-4">
           <label className="space-y-2 text-sm font-medium text-gray-700">
-            <span>Main image</span>
+            <span>
+              Main image <span className="text-red-500">*</span>
+            </span>
             <input
               onChange={(event) =>
                 void handleSingleImageChange(
@@ -1053,8 +1200,13 @@ const ProductModal = ({
               }
               type="file"
               accept="image/*"
-              className="w-full rounded-2xl border cursor-pointer border-gray-200 px-4 py-3 text-sm file:mr-4 file:rounded-xl file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-white"
+              className={`w-full rounded-2xl border cursor-pointer px-4 py-3 text-sm file:mr-4 file:rounded-xl file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-white ${validationErrors.mainImage ? "border-red-500" : "border-gray-200"}`}
             />
+            {validationErrors.mainImage && (
+              <p className="text-xs text-red-500">
+                A main product image is required
+              </p>
+            )}
           </label>
 
           {values.media.mainImage ? (
@@ -1148,120 +1300,131 @@ const ProductModal = ({
         </div>
 
         {values.variants.length ? (
-          values.variants.map((variant, index) => (
-            <div
-              key={`${variant.id}-media`}
-              className="rounded-3xl border border-gray-200 p-4"
-            >
-              <p className="text-sm font-semibold text-gray-900">
-                {variant.name || `Variant ${index + 1}`}
-              </p>
-              <div className="mt-4 grid gap-4">
-                <label className="space-y-2 text-sm font-medium text-gray-700">
-                  <span>Variant main image</span>
-                  <input
-                    onChange={(event) =>
-                      void handleSingleImageChange(
-                        event,
-                        "thefabricpeople/products/variants",
-                        (preview) =>
-                          setVariantMainPreviews((current) =>
-                            updatePreviewEntry(current, index, preview),
-                          ),
-                        (image) => updateVariant(index, "mainImage", image),
-                      )
-                    }
-                    type="file"
-                    accept="image/*"
-                    className="w-full rounded-2xl border cursor-pointer border-gray-200 px-4 py-3 text-sm file:mr-4 file:rounded-xl file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-white"
-                  />
-                </label>
-
-                {variant.mainImage ? (
-                  <ImageThumb
-                    src={variant.mainImage}
-                    alt={`${variant.name || "Variant"} main`}
-                    onRemove={() => updateVariant(index, "mainImage", "")}
-                  />
-                ) : null}
-                {variantMainPreviews[index] ? (
-                  <div>
-                    <ImageThumb
-                      src={variantMainPreviews[index]}
-                      alt={`${variant.name || "Variant"} main preview`}
-                      onRemove={() => {}}
-                      removable={false}
-                    />
-                    <UploadLoader label="Uploading image..." />
-                  </div>
-                ) : null}
-
-                <label className="space-y-2 text-sm font-medium text-gray-700">
-                  <span>Variant gallery</span>
-                  <input
-                    onChange={(event) =>
-                      void handleMultipleImagesChange(
-                        event,
-                        "thefabricpeople/products/variants",
-                        (previews) =>
-                          setVariantGalleryPreviews((current) =>
-                            updatePreviewListEntry(current, index, previews),
-                          ),
-                        (images) =>
-                          updateVariant(index, "gallery", [
-                            ...variant.gallery,
-                            ...images,
-                          ]),
-                      )
-                    }
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="w-full rounded-2xl border cursor-pointer border-gray-200 px-4 py-3 text-sm file:mr-4 file:rounded-xl file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-white"
-                  />
-                </label>
-
-                {variant.gallery.length ? (
-                  <div className="grid gap-3 md:grid-cols-3">
-                    {variant.gallery.map((image, imageIndex) => (
-                      <ImageThumb
-                        key={`${image}-${imageIndex}`}
-                        src={image}
-                        alt={`${variant.name || "Variant"} gallery ${imageIndex + 1}`}
-                        onRemove={() =>
-                          updateVariant(
-                            index,
-                            "gallery",
-                            variant.gallery.filter(
-                              (_, galleryIndex) => galleryIndex !== imageIndex,
+          values.variants.map((variant, index) => {
+            const vErr = variantErrors[index] ?? {};
+            return (
+              <div
+                key={`${variant.id}-media`}
+                className="rounded-3xl border border-gray-200 p-4"
+              >
+                <p className="text-sm font-semibold text-gray-900">
+                  {variant.name || `Variant ${index + 1}`}
+                </p>
+                <div className="mt-4 grid gap-4">
+                  <label className="space-y-2 text-sm font-medium text-gray-700">
+                    <span>
+                      Variant main image <span className="text-red-500">*</span>
+                    </span>
+                    <input
+                      onChange={(event) =>
+                        void handleSingleImageChange(
+                          event,
+                          "thefabricpeople/products/variants",
+                          (preview) =>
+                            setVariantMainPreviews((current) =>
+                              updatePreviewEntry(current, index, preview),
                             ),
-                          )
-                        }
+                          (image) => updateVariant(index, "mainImage", image),
+                        )
+                      }
+                      type="file"
+                      accept="image/*"
+                      className={`w-full rounded-2xl border cursor-pointer px-4 py-3 text-sm file:mr-4 file:rounded-xl file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-white ${vErr.mainImage ? "border-red-500" : "border-gray-200"}`}
+                    />
+                    {vErr.mainImage && (
+                      <p className="text-xs text-red-500">
+                        A main image is required for this variant
+                      </p>
+                    )}
+                  </label>
+
+                  {variant.mainImage ? (
+                    <ImageThumb
+                      src={variant.mainImage}
+                      alt={`${variant.name || "Variant"} main`}
+                      onRemove={() => updateVariant(index, "mainImage", "")}
+                    />
+                  ) : null}
+                  {variantMainPreviews[index] ? (
+                    <div>
+                      <ImageThumb
+                        src={variantMainPreviews[index]}
+                        alt={`${variant.name || "Variant"} main preview`}
+                        onRemove={() => {}}
+                        removable={false}
                       />
-                    ))}
-                  </div>
-                ) : null}
-                {variantGalleryPreviews[index]?.length ? (
-                  <div>
-                    <div className="grid gap-3 md:grid-cols-3">
-                      {variantGalleryPreviews[index].map(
-                        (image, imageIndex) => (
-                          <ImageThumb
-                            key={`variant-gallery-preview-${index}-${imageIndex}`}
-                            src={image}
-                            alt={`${variant.name || "Variant"} gallery preview ${imageIndex + 1}`}
-                            onRemove={() => {}}
-                            removable={false}
-                          />
-                        ),
-                      )}
+                      <UploadLoader label="Uploading image..." />
                     </div>
-                    <UploadLoader label="Uploading images..." />
-                  </div>
-                ) : null}
+                  ) : null}
+
+                  <label className="space-y-2 text-sm font-medium text-gray-700">
+                    <span>Variant gallery</span>
+                    <input
+                      onChange={(event) =>
+                        void handleMultipleImagesChange(
+                          event,
+                          "thefabricpeople/products/variants",
+                          (previews) =>
+                            setVariantGalleryPreviews((current) =>
+                              updatePreviewListEntry(current, index, previews),
+                            ),
+                          (images) =>
+                            updateVariant(index, "gallery", [
+                              ...variant.gallery,
+                              ...images,
+                            ]),
+                        )
+                      }
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="w-full rounded-2xl border cursor-pointer border-gray-200 px-4 py-3 text-sm file:mr-4 file:rounded-xl file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-white"
+                    />
+                  </label>
+
+                  {variant.gallery.length ? (
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {variant.gallery.map((image, imageIndex) => (
+                        <ImageThumb
+                          key={`${image}-${imageIndex}`}
+                          src={image}
+                          alt={`${variant.name || "Variant"} gallery ${imageIndex + 1}`}
+                          onRemove={() =>
+                            updateVariant(
+                              index,
+                              "gallery",
+                              variant.gallery.filter(
+                                (_, galleryIndex) =>
+                                  galleryIndex !== imageIndex,
+                              ),
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                  {variantGalleryPreviews[index]?.length ? (
+                    <div>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {variantGalleryPreviews[index].map(
+                          (image, imageIndex) => (
+                            <ImageThumb
+                              key={`variant-gallery-preview-${index}-${imageIndex}`}
+                              src={image}
+                              alt={`${variant.name || "Variant"} gallery preview ${imageIndex + 1}`}
+                              onRemove={() => {}}
+                              removable={false}
+                            />
+                          ),
+                        )}
+                      </div>
+                      <UploadLoader label="Uploading images..." />
+                    </div>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
             No variant media needed because this product has no variants.

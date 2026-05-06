@@ -8,7 +8,6 @@ import { getAllCategories } from "@/app/services/categoriesService";
 import { useAuth } from "@/app/context/AuthContext";
 import { useCartCount } from "@/app/context/CartCountContext";
 import { getCartItems } from "@/app/services/cartService";
-import SpecialUserLoginModal from "@/app/components/special/SpecialUserLoginModal";
 import SearchBar from "./SearchBar";
 
 type CategoryNode = {
@@ -30,6 +29,7 @@ const MegaMenu = ({
   onClose: () => void;
 }) => {
   const hasChildren = (category.children?.length ?? 0) > 0;
+  const router = useRouter();
 
   return (
     <div
@@ -40,7 +40,6 @@ const MegaMenu = ({
         boxShadow: "0 8px 32px rgba(200, 69, 26, 0.06), 0 2px 8px rgba(0,0,0,0.04)",
       }}
     >
-      {/* Decorative top accent line */}
       <div
         className="h-[2px] w-full"
         style={{ background: "linear-gradient(90deg, transparent, #c8451a, #e8783c, #f0a060, #e8783c, #c8451a, transparent)" }}
@@ -49,44 +48,34 @@ const MegaMenu = ({
       <div className="mx-auto max-w-6xl px-12 py-10">
         {hasChildren ? (
           <div className="flex gap-12">
-            {/* Left: Category hero accent */}
             <div className="flex flex-col justify-between py-1 shrink-0">
               <div>
-                <p
-                  className="font-serif italic text-3xl font-semibold leading-tight"
-                  style={{ color: "#1a0f08" }}
-                >
+                <p className="font-serif italic text-3xl font-semibold leading-tight" style={{ color: "#1a0f08" }}>
                   {category.name}
                 </p>
-                <div
-                  className="mt-2 h-[2px] w-10 rounded-full"
-                  style={{ background: "linear-gradient(90deg, #c8451a, #e8783c)" }}
-                />
+                <div className="mt-2 h-[2px] w-10 rounded-full" style={{ background: "linear-gradient(90deg, #c8451a, #e8783c)" }} />
               </div>
-              <div
-                className="text-[10px] uppercase tracking-[0.25em] mt-6"
+              <button
+                onClick={() => router.push(`/products?category=${category._id}`)}
+                className="text-[10px] uppercase cursor-pointer tracking-[0.25em] mt-6"
                 style={{ color: "#c8451a" }}
               >
                 Browse All →
-              </div>
+              </button>
             </div>
 
-            {/* Divider */}
-            <div
-              className="w-px self-stretch"
-              style={{ background: "linear-gradient(to bottom, transparent, rgba(200,69,26,0.2), transparent)" }}
-            />
+            <div className="w-px self-stretch" style={{ background: "linear-gradient(to bottom, transparent, rgba(200,69,26,0.2), transparent)" }} />
 
-            {/* Right: Sub-categories grid */}
             <div className="flex-1 grid grid-cols-2 gap-x-10 gap-y-8 sm:grid-cols-3 md:grid-cols-4">
               {category.children!.map((child) => (
                 <div key={child._id}>
-                  <p
-                    className="mb-3 text-[10px] font-semibold uppercase tracking-[0.22em]"
+                  <button
+                    onClick={() => router.push(`/products?category=${category._id}&subcategory=${child._id}`)}
+                    className="mb-3 text-[10px] font-semibold cursor-pointer uppercase tracking-[0.22em]"
                     style={{ color: "#c8451a" }}
                   >
                     {child.name}
-                  </p>
+                  </button>
 
                   {(child.children?.length ?? 0) > 0 && (
                     <ul className="space-y-2">
@@ -100,10 +89,7 @@ const MegaMenu = ({
                             onMouseEnter={e => (e.currentTarget.style.color = "#c8451a")}
                             onMouseLeave={e => (e.currentTarget.style.color = "#7a6a60")}
                           >
-                            <span
-                              className="inline-block h-1 w-1 rounded-full flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              style={{ background: "#e8783c" }}
-                            />
+                            <span className="inline-block h-1 w-1 rounded-full flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "#e8783c" }} />
                             {sub.name}
                           </a>
                         </li>
@@ -115,19 +101,12 @@ const MegaMenu = ({
             </div>
           </div>
         ) : (
-          <p className="text-sm" style={{ color: "#9a8a7e" }}>
-            No subcategories available.
-          </p>
+          <p className="text-sm" style={{ color: "#9a8a7e" }}>No subcategories available.</p>
         )}
 
-        {/* Bottom: Decorative diamond row */}
         <div className="mt-8 flex items-center gap-2">
           {Array.from({ length: 12 }).map((_, i) => (
-            <div
-              key={i}
-              className="w-2 h-2 rotate-45 flex-shrink-0"
-              style={{ background: i % 3 === 0 ? "rgba(200,69,26,0.25)" : "rgba(200,69,26,0.08)" }}
-            />
+            <div key={i} className="w-2 h-2 rotate-45 flex-shrink-0" style={{ background: i % 3 === 0 ? "rgba(200,69,26,0.25)" : "rgba(200,69,26,0.08)" }} />
           ))}
         </div>
       </div>
@@ -151,14 +130,11 @@ const MobileDrawer = ({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
 
-  const toggle = (id: string) =>
-    setExpandedId((prev) => (prev === id ? null : id));
-  const toggleSub = (id: string) =>
-    setExpandedSubId((prev) => (prev === id ? null : id));
+  const toggle = (id: string) => setExpandedId((prev) => (prev === id ? null : id));
+  const toggleSub = (id: string) => setExpandedSubId((prev) => (prev === id ? null : id));
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className={`fixed inset-0 z-40 transition-opacity duration-300 md:hidden ${
           isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
@@ -167,63 +143,39 @@ const MobileDrawer = ({
         onClick={onClose}
       />
 
-      {/* Drawer panel */}
       <div
         className={`fixed left-0 top-0 z-50 flex h-full w-[300px] flex-col transition-transform duration-300 ease-in-out md:hidden ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ background: "linear-gradient(160deg, #ffffff 0%, #fdf8f4 100%)", borderRight: "1px solid rgba(200, 69, 26, 0.12)" }}
       >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-5"
-          style={{ borderBottom: "1px solid rgba(200, 69, 26, 0.12)" }}
-        >
+        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid rgba(200, 69, 26, 0.12)" }}>
           <Link href="/" onClick={onClose} className="flex items-center gap-2">
             <TfpLogoMark size={28} />
-            <span
-              className="font-serif italic text-base font-semibold"
-              style={{ color: "#1a0f08" }}
-            >
+            <span className="font-serif italic text-base font-semibold" style={{ color: "#1a0f08" }}>
               The Fabric People
             </span>
           </Link>
-          <button
-            onClick={onClose}
-            style={{ color: "#b0a098" }}
-            className="transition-colors hover:text-[#c8451a]"
-            aria-label="Close menu"
-          >
+          <button onClick={onClose} style={{ color: "#b0a098" }} className="transition-colors hover:text-[#c8451a]" aria-label="Close menu">
             <X size={18} strokeWidth={1.5} />
           </button>
         </div>
 
-        {/* Nav items */}
         <div className="flex-1 overflow-y-auto py-4">
           {categories.map((category) => {
             const hasChildren = (category.children?.length ?? 0) > 0;
             const isExpanded = expandedId === category._id;
 
             return (
-              <div
-                key={category._id}
-                style={{ borderBottom: "1px solid rgba(200, 69, 26, 0.08)" }}
-              >
+              <div key={category._id} style={{ borderBottom: "1px solid rgba(200, 69, 26, 0.08)" }}>
                 <button
                   onClick={() => hasChildren && toggle(category._id)}
                   className="flex w-full items-center justify-between px-6 py-3.5 text-left transition-colors"
                   style={{ color: isExpanded ? "#c8451a" : "#3a2a20" }}
                 >
-                  <span className="text-sm font-medium uppercase tracking-[0.08em]">
-                    {category.name}
-                  </span>
+                  <span className="text-sm font-medium uppercase tracking-[0.08em]">{category.name}</span>
                   {hasChildren && (
-                    <ChevronDown
-                      size={13}
-                      strokeWidth={2}
-                      className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                      style={{ color: "#6b5b4e" }}
-                    />
+                    <ChevronDown size={13} strokeWidth={2} className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} style={{ color: "#6b5b4e" }} />
                   )}
                 </button>
 
@@ -239,18 +191,11 @@ const MobileDrawer = ({
                             onClick={() => hasGrandChildren && toggleSub(child._id)}
                             className="flex w-full items-center justify-between px-4 py-2 text-left"
                           >
-                            <span
-                              className="text-[10px] font-semibold uppercase tracking-[0.2em]"
-                              style={{ color: "#e8783c" }}
-                            >
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: "#e8783c" }}>
                               {child.name}
                             </span>
                             {hasGrandChildren && (
-                              <ChevronDown
-                                size={11}
-                                className={`transition-transform duration-200 ${isSubExpanded ? "rotate-180" : ""}`}
-                                style={{ color: "#6b5b4e" }}
-                              />
+                              <ChevronDown size={11} className={`transition-transform duration-200 ${isSubExpanded ? "rotate-180" : ""}`} style={{ color: "#6b5b4e" }} />
                             )}
                           </button>
 
@@ -281,7 +226,6 @@ const MobileDrawer = ({
             );
           })}
 
-          {/* Special */}
           <div style={{ borderBottom: "1px solid rgba(200, 69, 26, 0.08)" }}>
             <button
               type="button"
@@ -295,11 +239,7 @@ const MobileDrawer = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div
-          className="flex items-center gap-5 px-6 py-5"
-          style={{ borderTop: "1px solid rgba(200, 69, 26, 0.12)" }}
-        >
+        <div className="flex items-center gap-5 px-6 py-5" style={{ borderTop: "1px solid rgba(200, 69, 26, 0.12)" }}>
           <Link
             href="/account"
             onClick={onClose}
@@ -335,14 +275,11 @@ const Navbar = () => {
   const [allCategories, setAllCategories] = useState<CategoryNode[]>([]);
   const [activeCategory, setActiveCategory] = useState<CategoryNode | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isSpecialLoginOpen, setIsSpecialLoginOpen] = useState(false);
-  const [isSpecialLoginLoading, setIsSpecialLoginLoading] = useState(false);
-  const [specialLoginError, setSpecialLoginError] = useState("");
 
   const navRef = useRef<HTMLElement>(null);
   const router = useRouter();
 
-  const { sessionType, isSpecialSession, loginAsSpecialUser } = useAuth();
+  const { sessionType, isSpecialSession } = useAuth();
   const { count, setCount } = useCartCount();
 
   useEffect(() => {
@@ -390,24 +327,9 @@ const Navbar = () => {
   const openSpecialAccess = () => {
     setActiveCategory(null);
     setMobileOpen(false);
-    if (isSpecialSession) { router.push("/special"); return; }
-    setSpecialLoginError("");
-    setIsSpecialLoginOpen(true);
-  };
-
-  const handleSpecialLogin = async (values: { email: string; password: string }) => {
-    try {
-      setIsSpecialLoginLoading(true);
-      setSpecialLoginError("");
-      await loginAsSpecialUser(values.email, values.password);
-      setIsSpecialLoginOpen(false);
-      router.push("/special");
-      router.refresh();
-    } catch (error) {
-      setSpecialLoginError(error instanceof Error ? error.message : "Unable to sign in.");
-    } finally {
-      setIsSpecialLoginLoading(false);
-    }
+    // If already in a special session go straight to the catalog,
+    // otherwise send them to the login page.
+    router.push(isSpecialSession ? "/special" : "/special/login");
   };
 
   return (
@@ -415,14 +337,8 @@ const Navbar = () => {
       <nav
         ref={navRef}
         className="relative w-full"
-        style={{
-          background: "#12090400",
-          backgroundColor: "#12090400",
-        }}
+        style={{ background: "#12090400", backgroundColor: "#12090400" }}
       >
-      
-
-        {/* Main bar */}
         <div
           className="flex items-center justify-between gap-4 px-6 py-0 sm:px-10 md:px-14"
           style={{
@@ -477,19 +393,11 @@ const Navbar = () => {
                   }}
                 >
                   {isActive && (
-                    <span
-                      className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full"
-                      style={{ background: "linear-gradient(90deg, #c8451a, #e8783c)" }}
-                    />
+                    <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full" style={{ background: "linear-gradient(90deg, #c8451a, #e8783c)" }} />
                   )}
                   {category.name}
                   {hasChildren && (
-                    <ChevronDown
-                      size={11}
-                      strokeWidth={2.5}
-                      className={`transition-transform duration-200 ${isActive ? "rotate-180" : ""}`}
-                      style={{ color: isActive ? "#c8451a" : "#b0a098", flexShrink: 0 }}
-                    />
+                    <ChevronDown size={11} strokeWidth={2.5} className={`transition-transform duration-200 ${isActive ? "rotate-180" : ""}`} style={{ color: isActive ? "#c8451a" : "#b0a098", flexShrink: 0 }} />
                   )}
                 </button>
               );
@@ -501,9 +409,7 @@ const Navbar = () => {
               onClick={openSpecialAccess}
               className="flex cursor-pointer items-center gap-1.5 px-4 py-2 rounded text-[11.5px] font-semibold uppercase tracking-[0.1em] transition-all duration-200 ml-1"
               style={{
-                background: isSpecialSession
-                  ? "linear-gradient(135deg, #c8451a, #e8783c)"
-                  : "rgba(200, 69, 26, 0.12)",
+                background: isSpecialSession ? "linear-gradient(135deg, #c8451a, #e8783c)" : "rgba(200, 69, 26, 0.12)",
                 color: isSpecialSession ? "#fff" : "#e8783c",
                 border: "1px solid rgba(200, 69, 26, 0.3)",
                 fontFamily: "'DM Sans', sans-serif",
@@ -561,10 +467,7 @@ const Navbar = () => {
             >
               <ShoppingBag size={17} strokeWidth={1.5} />
               {count > 0 && (
-                <span
-                  className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                  style={{ background: "#c8451a" }}
-                >
+                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: "#c8451a" }}>
                   {count}
                 </span>
               )}
@@ -572,12 +475,8 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mega menu */}
         {activeCategory && (
-          <MegaMenu
-            category={activeCategory}
-            onClose={() => setActiveCategory(null)}
-          />
+          <MegaMenu category={activeCategory} onClose={() => setActiveCategory(null)} />
         )}
       </nav>
 
@@ -586,17 +485,6 @@ const Navbar = () => {
         isOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
         onSpecialClick={openSpecialAccess}
-      />
-
-      <SpecialUserLoginModal
-        isOpen={isSpecialLoginOpen}
-        isLoading={isSpecialLoginLoading}
-        externalError={specialLoginError}
-        onClose={() => {
-          setIsSpecialLoginOpen(false);
-          setSpecialLoginError("");
-        }}
-        onSubmit={handleSpecialLogin}
       />
     </>
   );

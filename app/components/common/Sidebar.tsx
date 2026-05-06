@@ -11,6 +11,8 @@ import {
   ClipboardList,
   UserStar,
   Mail,
+  Home,
+  FileText,
 } from "lucide-react";
 
 type NavItem = {
@@ -21,10 +23,13 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/admin", label: "Overview", icon: <LayoutDashboard size={18} /> },
+  { href: "/admin/home", label: "Home", icon: <Home size={18} /> },
+
   { href: "/admin/category", label: "Category", icon: <Folders size={18} /> },
   { href: "/admin/products", label: "Products", icon: <ShoppingBag size={18} /> },
   { href: "/admin/users", label: "Users", icon: <Users size={18} /> },
   { href: "/admin/special-users", label: "Special Users", icon: <UserStar size={18} /> },
+  { href: "/admin/special-user-requests", label: "Access Requests", icon: <FileText size={18} /> },
   { href: "/admin/orders", label: "Orders", icon: <ClipboardList size={18} /> },
   { href: "/admin/enquiries", label: "Enquiries", icon: <Mail size={18} /> },
 ];

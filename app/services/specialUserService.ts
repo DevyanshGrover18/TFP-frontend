@@ -66,3 +66,46 @@ export const loginSpecialUserApi = async (email: string, password: string) => {
     onUnauthorizedRedirectTo: null,
   });
 };
+
+export const createSpecialUserRequest = async (name : string, companyName : string, email : string)=> {
+  return fetchApi<{success : boolean, message : string}>("/special-users/request", {
+    method: "POST",
+    body: JSON.stringify({ name, companyName, email }),
+  });
+}
+
+export const getSpecialUserById = async (id: string) => {
+  return fetchApi<SpecialUserResponse>(`/special-users/${id}`, {
+    cache: "no-store",
+  });
+};
+
+export type SpecialUserRequestRecord = {
+  _id: string;
+  name: string;
+  companyName: string;
+  email: string;
+  status: "pending" | "approved" | "declined";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const getAllSpecialUserRequests = async () => {
+  return fetchApi<{ success: boolean; message?: string; requests: SpecialUserRequestRecord[] }>("/special-users/request", {
+    cache: "no-store",
+  });
+};
+
+export const updateSpecialUserRequestStatus = async (id: string, status: "approved" | "declined") => {
+  return fetchApi<{ success: boolean; message?: string }>(`/special-users/request/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+};
+
+export const deleteSpecialUserRequest = async (id: string) => {
+  return fetchApi<{ success: boolean; message?: string }>(`/special-users/request/${id}`, {
+    method: "DELETE",
+  });
+};
+
