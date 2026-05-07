@@ -78,7 +78,7 @@ const ComponentsSection = () => {
         {/* CTA button */}
         <div className="mt-10 flex justify-center">
           <Link
-            href="/products"
+            href="/products?category=69f9d07b437c2de55787fd3a"
             className="inline-flex items-center gap-2 rounded-full px-7 py-2.5 text-sm transition-all duration-200 hover:bg-[#d94f4f] hover:text-white border border-[#d94f4f] text-[#d94f4f] ">
             View All Products
             <span style={{ fontSize: "15px" }}>→</span>
