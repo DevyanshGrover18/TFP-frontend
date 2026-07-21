@@ -84,7 +84,7 @@ currentStatus)
 }
 
 export default function OrderPageClient() {
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const id = searchParams.get("id") ?? "";
 
   const [order, setOrder] = useState(null);

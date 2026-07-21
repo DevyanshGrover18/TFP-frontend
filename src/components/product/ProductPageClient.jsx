@@ -11,7 +11,7 @@ import {
 "@/services/productsService";
 
 export default function ProductPageClient() {
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const router = useRouter();
   const slug = searchParams.get("slug") ?? "";
 
